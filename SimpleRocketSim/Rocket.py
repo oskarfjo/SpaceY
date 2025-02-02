@@ -64,11 +64,11 @@ class Rocket(object):
                 ### QOL ###
 
             # makes borders at the edges of the screen so that the rocket cant go out of sight
-            self.positiony = mu.saturate(self.positiony, 0, 160)
+            self.positiony = mu.saturate(self.positiony, 0, 177)
             self.positionx = mu.saturate(self.positionx, -50, 50)
 
             # Stops the rocket from simulating movement when it is at the borders
-            if self.positiony == 0 or self.positiony == 160:
+            if self.positiony == 0 or self.positiony == 177:
                 self.velocityx = 0
                 self.velocityy = 0
 
