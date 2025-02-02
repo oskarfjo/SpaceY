@@ -43,7 +43,7 @@ while running:
     dt = 0.2 #current_time - last_time
     last_time = current_time
 
-    rocket.step(dt)
+    rocket.dynamics_step(dt)
 
     ### Aestetics ###
     screen.fill((28, 37, 60)) # makes the background
@@ -51,8 +51,10 @@ while running:
     
 
     # The coordinate system has origo in the top left corner and the y-axis increases downwards
-    rocket_alt = 1670 - rocket.positiony
-    rocket_pos = 540 - rocket.positionx
+    # 1000 height units here = 100 m in the calculated dynamics of the rocket
+    # the total simulated window is 167 meters tall, and 108 meters wide
+    rocket_alt = 1670 - rocket.positiony * 10
+    rocket_pos = 540 - rocket.positionx * 10
 
     rocket_center = (rocket_pos, rocket_alt)
     rotated_image = pygame.transform.rotate(rocket_image, rocket.theta)
@@ -60,10 +62,12 @@ while running:
     screen.blit(rotated_image, rotated_rect)
 
     ### info text in the simulator ###
-    text_theta = font.render(f'theta: {round(rocket.theta, 2)}', True, (255, 255, 1))
+    text_theta = font.render(f'theta: {round(rocket.theta, 2)} deg', True, (255, 255, 1))
     text_launched = font.render(f'launched: {rocket.launched}', True, (255, 255, 1))
+    text_altitude = font.render(f'altitude: {round(rocket.positiony)}m', True, (255, 255, 1))
     screen.blit(text_theta, (30, 10))
-    screen.blit(text_launched, (210, 10))
+    screen.blit(text_altitude, (200, 10))
+    screen.blit(text_launched, (400, 10))
 
     text_info_1 = font_small.render(f'Use RIGHT / LEFT arrows to increase / decrease theta', True, (255, 255, 1))
     text_info_2 = font_small.render(f'Press SPACE to launch rocket', True, (255, 255, 1))

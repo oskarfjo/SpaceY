@@ -17,19 +17,21 @@ class Rocket(object):
         self.velocityx  = 0.0
 
         ### PARAMETERS ###
-        self.mass   = 1     # kg
-        self.CD0    = 0.025
-        self.area   = 0.04  # m2
-        self.rho    = 1.225 # kgm-3
-        self.g      = 9.81  # ms-2
-        self.T      = 20    # N
+        self.mass   = 0.6027    # kg
+        self.CD0    = 0.25
+        self.area   = 0.004     # m2
+        self.rho    = 1.225     # kgm-3
+        self.g      = 9.81      # ms-2
+        self.T      = 8.7       # N
 
-    def step(self, dt):
+
+    def dynamics_step(self, dt):
         if True:
             
             ### Simulating dynamics ###
 
-            # adds the thrust force when the rocket is in the launched state
+
+            # adds the thrust force only when the rocket is in the launched state
             if self.launched:
                 F_thrust = np.array([self.T * np.sin(np.deg2rad(self.theta)), self.T * np.cos(np.deg2rad(self.theta))])
             else:
@@ -38,19 +40,17 @@ class Rocket(object):
             F_gravity = np.array([0, -self.mass * self.g])
 
             velocity = np.array([self.velocityx, self.velocityy]) # vector for velocity in 2D
-            speed = np.linalg.norm(velocity)
 
-            # the drag works opposite to the direction of the velocity
-            if speed > 0:
-                drag_direction = -velocity / speed
-            else:
-                drag_direction = np.array([0, 0])
+            F_drag = mu.compute_drag(velocity,
+                      self.theta,         # deg
+                      self.CD0,           # baseline
+                      self.rho,
+                      A_front=0.0044,     # from diameter = 75mm
+                      A_side=0.0375       # side area from height = 50 cm
+                      )
 
-            F_drag_magnitude = 0.5 * self.rho * self.CD0 * self.area * speed**2
-            F_drag = F_drag_magnitude * drag_direction
-
-            F_net = F_thrust + F_drag + F_gravity # vector in 2D
-            acceleration = F_net / self.mass # vector in 2D
+            F_sum = F_thrust + F_drag + F_gravity 
+            acceleration = F_sum / self.mass # F = ma  ->  F/m = a
 
             # integrating acceleration for velocity
             self.velocityy += dt * acceleration[1]
@@ -64,15 +64,16 @@ class Rocket(object):
                 ### QOL ###
 
             # makes borders at the edges of the screen so that the rocket cant go out of sight
-            self.positiony = mu.saturate(self.positiony, 0, 1600)
-            self.positionx = mu.saturate(self.positionx, -500, 500)
+            self.positiony = mu.saturate(self.positiony, 0, 160)
+            self.positionx = mu.saturate(self.positionx, -50, 50)
 
             # Stops the rocket from simulating movement when it is at the borders
-            if self.positiony == 0 or self.positiony == 1600:
+            if self.positiony == 0 or self.positiony == 160:
                 self.velocityx = 0
                 self.velocityy = 0
 
             if DEBUG:
-                print(f'pos = [{self.positionx}, {self.positiony}], vel = [{self.velocityx}, {self.velocityy}]')
-                print(f'acceleration = {acceleration}')
+                print(f'pos = [{self.positionx}, {self.positiony}]m, vel = [{self.velocityx}, {self.velocityy}] ms-1')
+                print(f'acceleration = {acceleration} ms-2')
+                print(f'F_drag = {F_drag} N, F_thrust = {F_thrust} N, F_net = {F_sum} N')
 
