@@ -9,12 +9,12 @@ class Rocket(object):
     def __init__(self):
 
         ### DYNAMIC VALUES ###
-        self.positiony  = 0
-        self.positionx  = 0
+        self.positionY  = 0
+        self.positionX  = 0
         self.theta      = 0
         self.launched   = False
-        self.velocityy  = 0.0
-        self.velocityx  = 0.0
+        self.velocityY  = 0.0
+        self.velocityX  = 0.0
 
         ### PARAMETERS ###
         self.mass   = 0.6027    # kg
@@ -39,7 +39,7 @@ class Rocket(object):
 
             F_gravity = np.array([0, -self.mass * self.g])
 
-            velocity = np.array([self.velocityx, self.velocityy]) # vector for velocity in 2D
+            velocity = np.array([self.velocityX, self.velocityY]) # vector for velocity in 2D
 
             F_drag = mu.compute_drag(velocity,
                       self.theta,         # deg
@@ -53,27 +53,27 @@ class Rocket(object):
             acceleration = F_sum / self.mass # F = ma  ->  F/m = a
 
             # integrating acceleration for velocity
-            self.velocityy += dt * acceleration[1]
-            self.velocityx += dt * acceleration[0]
+            self.velocityY += dt * acceleration[1]
+            self.velocityX += dt * acceleration[0]
 
             # integrating velocity for position
-            self.positiony += dt * self.velocityy
-            self.positionx += dt * self.velocityx
+            self.positionY += dt * self.velocityY
+            self.positionX += dt * self.velocityX
 
 
                 ### QOL ###
 
             # makes borders at the edges of the screen so that the rocket cant go out of sight
-            self.positiony = mu.saturate(self.positiony, 0, 177)
-            self.positionx = mu.saturate(self.positionx, -50, 50)
+            self.positionY = mu.saturate(self.positionY, 0, 177)
+            self.positionX = mu.saturate(self.positionX, -50, 50)
 
             # Stops the rocket from simulating movement when it is at the borders
-            if self.positiony == 0 or self.positiony == 177:
-                self.velocityx = 0
-                self.velocityy = 0
+            if self.positionY == 0 or self.positionY == 177:
+                self.velocityX = 0
+                self.velocityY = 0
 
             if DEBUG:
-                print(f'pos = [{self.positionx}, {self.positiony}]m, vel = [{self.velocityx}, {self.velocityy}] ms-1')
+                print(f'pos = [{self.positionX}, {self.positionY}]m, vel = [{self.velocityX}, {self.velocityY}] ms-1')
                 print(f'acceleration = {acceleration} ms-2')
                 print(f'F_drag = {F_drag} N, F_thrust = {F_thrust} N, F_net = {F_sum} N')
 

@@ -16,10 +16,12 @@ clock = pygame.time.Clock()
 font = pygame.font.Font(None, 36)
 font_small = pygame.font.Font(None, 24)
 imported_rocket_image = pygame.image.load('rocket_img.png')
-rocket_image = pygame.transform.scale(imported_rocket_image, (10, 50)) # Scales the picture of the rocket in the simulator. units = cm
-
+imported_moon_image = pygame.image.load('moon_img.png')
+imported_hills_image = pygame.image.load('hills_img.png')
+rocket_image = pygame.transform.scale(imported_rocket_image, (15, 40)) # Scales the picture of the rocket in the simulator. units = cm
+moon_image = pygame.transform.scale(imported_moon_image, (200, 200))
+hills_image = pygame.transform.scale(imported_hills_image, (screen_width, (135/256 * screen_width)))
 rocket = Rocket()
-
 
     ### LOOP ###
 
@@ -49,13 +51,22 @@ while running:
     rocket.dynamics_step(dt)
 
     ### Aestetics ###
-    screen.fill((28, 37, 60)) # makes the background
-    pygame.draw.rect(screen, (17, 124, 19), [0, (screen_height - 40) , screen_width, 250]) # makes the grass at the bottom
-    
+    screen.fill((31, 62, 90)) # makes the background
+    #pygame.draw.line(screen, (200, 200, 0), (screen_width/2, 0), (screen_width/2, screen_height))
+    hills_height = screen_height
+    hills_center = (screen_width/2, hills_height)
+    hills_rect = hills_image.get_rect(center=hills_center)
+    screen.blit(hills_image, hills_rect)
+    moon_height = 200
+    moon_pos = screen_width - 200
+    moon_center = (moon_pos, moon_height)
+    moon_rect = moon_image.get_rect(center=moon_center)
+    screen.blit(moon_image, moon_rect)
+    pygame.draw.rect(screen, (200, 200, 100), [0, (screen_height - 40) , screen_width, 250])
 
     # The coordinate system has origo in the top left corner and the y-axis increases downwards. units = cm
-    rocket_alt = (screen_height - 65) - rocket.positiony * 10
-    rocket_pos = (screen_width/2) - rocket.positionx * 10
+    rocket_alt = (screen_height - 65) - rocket.positionY * 10
+    rocket_pos = (screen_width/2) - rocket.positionX * 10
 
     rocket_center = (rocket_pos, rocket_alt)
     rotated_image = pygame.transform.rotate(rocket_image, rocket.theta)
@@ -70,10 +81,10 @@ while running:
     alt_line10 = (screen_height - 65) - 100
     pygame.draw.line(screen, (255, 255, 1), (0, alt_line10), (screen_width, alt_line10), 1)
 
-    text_theta = font.render(f'Theta: {round(rocket.theta, 2)} deg', True, (10, 10, 10))
-    text_launched = font.render(f'Launched: {rocket.launched}', True, (10, 10, 10))
-    text_altitude = font.render(f'Altitude: {round(rocket.positiony)}m', True, (10, 10, 10))
-    text_motor = font.render(f'TTW: {round(rocket.T / (rocket.mass * rocket.g), 2)}', True, (10, 10, 10))
+    text_theta      = font.render(f'Theta: {round(rocket.theta, 2)} deg', True, (10, 10, 10))
+    text_launched   = font.render(f'Launched: {rocket.launched}', True, (10, 10, 10))
+    text_altitude   = font.render(f'Altitude: {round(rocket.positionY)}m', True, (10, 10, 10))
+    text_motor      = font.render(f'TTW: {round(rocket.T / (rocket.mass * rocket.g), 2)}', True, (10, 10, 10))
     screen.blit(text_theta, (30, (screen_height - 30)))
     screen.blit(text_altitude, (200, (screen_height - 30)))
     screen.blit(text_launched, (400, (screen_height - 30)))
@@ -87,8 +98,8 @@ while running:
     screen.blit(text_info_1, (10, 10))
     screen.blit(text_info_2, (10, 30))
     screen.blit(text_info_3, (10, 50))
-    screen.blit(text_info_4, (10, alt_line100 + 10))
-    screen.blit(text_info_5, (10, alt_line10 + 10))
+    screen.blit(text_info_4, (10, (alt_line100 + 10)))
+    screen.blit(text_info_5, (10, (alt_line10 + 10)))
 
     pygame.display.flip()
     clock.tick(60)
