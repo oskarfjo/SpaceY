@@ -5,12 +5,19 @@ from Rocket import Rocket
 
 DEBUG = True
 
+SCREEN = 0
+
     ### init ###
 
 pygame.init()
 
-screen_width = 1080
-screen_height = 1840
+if SCREEN == 1:
+    screen_width = 1080
+    screen_height = 1840
+else:
+    screen_height = 1200
+    screen_width = 1200 * 1080/1840
+
 screen = pygame.display.set_mode((screen_width, screen_height)) # makes the window. window dimentions = (width, height)
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 36)
@@ -84,11 +91,11 @@ while running:
     text_theta      = font.render(f'Theta: {round(rocket.theta, 2)} deg', True, (10, 10, 10))
     text_launched   = font.render(f'Launched: {rocket.launched}', True, (10, 10, 10))
     text_altitude   = font.render(f'Altitude: {round(rocket.positionY)}m', True, (10, 10, 10))
-    text_motor      = font.render(f'TTW: {round(rocket.T / (rocket.mass * rocket.g), 2)}', True, (10, 10, 10))
+    #text_motor      = font.render(f'TTW: {round(rocket.T / (rocket.mass * rocket.g), 2)}', True, (10, 10, 10))
     screen.blit(text_theta, (30, (screen_height - 30)))
     screen.blit(text_altitude, (200, (screen_height - 30)))
-    screen.blit(text_launched, (400, (screen_height - 30)))
-    screen.blit(text_motor, ((screen_width - 150), (screen_height - 30)))
+    screen.blit(text_launched, (430, (screen_height - 30)))
+    #screen.blit(text_motor, ((screen_width - 150), (screen_height - 30)))
 
     text_info_1 = font_small.render(f'Use RIGHT / LEFT arrows to increase / decrease theta', True, (255, 255, 1))
     text_info_2 = font_small.render(f'Press SPACE to launch rocket', True, (255, 255, 1))

@@ -22,7 +22,7 @@ class Rocket(object):
         self.area   = 0.004     # m2
         self.rho    = 1.225     # kgm-3
         self.g      = 9.81      # ms-2
-        self.T      = 8.7       # N
+        self.T      = 30       # N
 
 
     def dynamics_step(self, dt):
@@ -64,11 +64,11 @@ class Rocket(object):
                 ### QOL ###
 
             # makes borders at the edges of the screen so that the rocket cant go out of sight
-            self.positionY = mu.saturate(self.positionY, 0, 177)
-            self.positionX = mu.saturate(self.positionX, -50, 50)
+            self.positionY = mu.saturate(self.positionY, 0, 112)
+            self.positionX = mu.saturate(self.positionX, -35, 35)
 
             # Stops the rocket from simulating movement when it is at the borders
-            if self.positionY == 0 or self.positionY == 177:
+            if self.positionY == 0 or self.positionY == 112:
                 self.velocityX = 0
                 self.velocityY = 0
 
