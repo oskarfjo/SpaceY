@@ -2,21 +2,16 @@ import pygame
 import numpy as np
 import time
 from Rocket import Rocket
+import matplotlib.pyplot as plt
 
 DEBUG = True
-
-SCREEN = 0
 
     ### init ###
 
 pygame.init()
 
-if SCREEN == 1:
-    screen_width = 1080
-    screen_height = 1840
-else:
-    screen_height = 990
-    screen_width = screen_height * 1080/1840
+screen_height = 990
+screen_width = screen_height * 1080/1840
 
 screen = pygame.display.set_mode((screen_width, screen_height)) # makes the window. window dimentions = (width, height)
 clock = pygame.time.Clock()
@@ -26,11 +21,9 @@ imported_rocket_image = pygame.image.load('rocket_img.png')
 imported_moon_image = pygame.image.load('moon_img.png')
 imported_hills_image = pygame.image.load('hills_img.png')
 rocket_image = pygame.transform.scale(imported_rocket_image, (15, 40)) # Scales the picture of the rocket in the simulator. 
-moon_image = pygame.transform.scale(imported_moon_image, (200, 200))
+moon_image = pygame.transform.scale(imported_moon_image, (150, 150))
 hills_image = pygame.transform.scale(imported_hills_image, (screen_width, (135/256 * screen_width)))
 rocket = Rocket()
-
-    ### LOOP ###
 
 timer = 0
 lap = 0
@@ -39,9 +32,15 @@ timer_toggle = False
 running = True
 last_time = time.time()
 
+
+    ############
+    ### LOOP ###
+    ############
+
+
 while running:
 
-    for event in pygame.event.get():
+    for event in pygame.event.get(): # configures the input keys for interacting with the sim
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
@@ -63,17 +62,17 @@ while running:
     if rocket.launched:
         timer += dt
 
-    rocket.dynamics_step(dt)
+    rocket.dynamics_step(dt) # runs the step function in Rocket.py
 
     ### Aestetics ###
     screen.fill((31, 62, 90)) # makes the background
     #pygame.draw.line(screen, (200, 200, 0), (screen_width/2, 0), (screen_width/2, screen_height))
-    hills_height = screen_height
+    hills_height = screen_height - 10
     hills_center = (screen_width/2, hills_height)
     hills_rect = hills_image.get_rect(center=hills_center)
     screen.blit(hills_image, hills_rect)
-    moon_height = 200
-    moon_pos = screen_width - 200
+    moon_height = 50
+    moon_pos = screen_width - 20
     moon_center = (moon_pos, moon_height)
     moon_rect = moon_image.get_rect(center=moon_center)
     screen.blit(moon_image, moon_rect)
@@ -83,18 +82,18 @@ while running:
     rocket_alt = (screen_height - 65) - rocket.positionY * 10 * 3/4
     rocket_pos = (screen_width/2) - rocket.positionX * 10 * 3/4
 
-    if rocket.positionY > 100.0 and not prositionY_last > 100.0 and rocket.launched:
+    if rocket.positionY > 100.0 and not prositionY_last > 100.0 and rocket.launched: # checks if the rocket passed 100 meters since last dt
         lap = timer
         timer_toggle = True
-
     prositionY_last = rocket.positionY
 
+    ### configures the rocket in the sim ###
     rocket_center = (rocket_pos, rocket_alt)
     rotated_image = pygame.transform.rotate(rocket_image, rocket.theta)
     rotated_rect = rotated_image.get_rect(center=rocket_center)
     screen.blit(rotated_image, rotated_rect)
 
-    ### info text in the simulator ###
+    ### info/text in the sim ###
 
     alt_line100 = (screen_height - 65) - 1000 * 3/4
     pygame.draw.line(screen, (255, 255, 1), (0, alt_line100), (screen_width, alt_line100), 1)
@@ -115,9 +114,9 @@ while running:
     text_info_2 = font_small.render(f'Press SPACE to launch rocket', True, (255, 255, 1))
     text_info_3 = font_small.render(f'Press X to quit', True, (255, 255, 1))
     if not timer_toggle:
-        text_info_4 = font_small.render(f'Time (to 100m): {round(timer, 1)}s', True, (255, 255, 1))
+        text_info_4 = font_small.render(f'Time (to 100m): {round(timer, 2)}s', True, (255, 255, 1))
     else:
-        text_info_4 = font_small.render(f'Time (to 100m): {round(lap, 1)}s', True, (255, 255, 1))
+        text_info_4 = font_small.render(f'Time (to 100m): {round(lap, 2)}s', True, (255, 255, 1))
     #text_info_5 = font_small.render(f'Lap: {round(lap, 1)}', True, (255, 255, 1))
 
     text_info_6 = font_small.render(f'100m', True, (255, 255, 1))

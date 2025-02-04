@@ -17,46 +17,55 @@ class Rocket(object):
         self.velocityX  = 0.0
 
         ### PARAMETERS ###
-        self.mass   = 0.6027    # kg
-        self.CD0    = 0.25
-        self.area   = 0.004     # m2
-        self.rho    = 1.225     # kgm-3
-        self.g      = 9.81      # ms-2
-        self.T      = 30        # N
+        self.mass       = 0.6027    # kg
+        self.CD0        = 0.25
+        self.rho        = 1.225     # kgm-3
+        self.g          = 9.81      # ms-2
+        self.T          = 30        # N
+        self.diameter   = 75e-3     # xx mm to 0,0xx m
+        self.length     = 50e-2     # xx cm to 0.xx m
 
+
+    def drag(self, velocity):
+        speed = np.linalg.norm(velocity)
+        if speed > 0:
+            drag_direction = -velocity / speed
+        else:
+            drag_direction = np.array([0, 0])
+
+        area = 0.25 * np.pi * self.diameter**2
+
+        F_drag_magnitude = 0.5 * self.rho * self.CD0 * area * speed**2
+
+        return F_drag_magnitude * drag_direction
+    
+    def thrust(self, force, angle):
+        return np.array([force * np.sin(np.deg2rad(angle)), force * np.cos(np.deg2rad(angle))])
 
     def dynamics_step(self, dt):
         if True:
             
             ### Simulating dynamics ###
 
-
             # adds the thrust force only when the rocket is in the launched state
             if self.launched:
-                F_thrust = np.array([self.T * np.sin(np.deg2rad(self.theta)), self.T * np.cos(np.deg2rad(self.theta))])
+                F_thrust = self.thrust(self.T, self.theta)
             else:
-                F_thrust = 0
+                F_thrust = self.thrust(0, self.theta)
 
             F_gravity = np.array([0, -self.mass * self.g])
 
             velocity = np.array([self.velocityX, self.velocityY]) # vector for velocity in 2D
-
-            F_drag = mu.compute_drag(velocity,
-                      self.theta,         # deg
-                      self.CD0,           # baseline
-                      self.rho,
-                      A_front=0.0044,     # from diameter = 75mm
-                      A_side=0.0375       # side area from height = 50 cm
-                      )
+            F_drag = self.drag(velocity)
 
             F_sum = F_thrust + F_drag + F_gravity 
             acceleration = F_sum / self.mass # F = ma  ->  F/m = a
 
-            # integrating acceleration for velocity
+            ### integrating acceleration for velocity ###
             self.velocityY += dt * acceleration[1]
             self.velocityX += dt * acceleration[0]
 
-            # integrating velocity for position
+            ### integrating velocity for position ###
             self.positionY += dt * self.velocityY
             self.positionX += dt * self.velocityX
 
