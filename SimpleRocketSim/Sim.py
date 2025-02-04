@@ -60,7 +60,8 @@ while running:
     current_time = time.time()
     dt = current_time - last_time
     last_time = current_time
-    timer += dt
+    if rocket.launched:
+        timer += dt
 
     rocket.dynamics_step(dt)
 
