@@ -89,12 +89,12 @@ while running:
     pygame.draw.line(screen, (255, 255, 1), (0, alt_line10), (screen_width, alt_line10), 1)
 
     text_theta      = font.render(f'Theta: {round(rocket.theta, 2)} deg', True, (10, 10, 10))
-    text_launched   = font.render(f'Launched: {rocket.launched}', True, (10, 10, 10))
+    text_launched   = font.render(f'Thrust: {rocket.launched}', True, (10, 10, 10))
     text_altitude   = font.render(f'Altitude: {round(rocket.positionY)}m', True, (10, 10, 10))
     #text_motor      = font.render(f'TTW: {round(rocket.T / (rocket.mass * rocket.g), 2)}', True, (10, 10, 10))
     screen.blit(text_theta, (30, (screen_height - 30)))
     screen.blit(text_altitude, (200, (screen_height - 30)))
-    screen.blit(text_launched, (430, (screen_height - 30)))
+    screen.blit(text_launched, (380, (screen_height - 30)))
     #screen.blit(text_motor, ((screen_width - 150), (screen_height - 30)))
 
     text_info_1 = font_small.render(f'Use RIGHT / LEFT arrows to increase / decrease theta', True, (255, 255, 1))
