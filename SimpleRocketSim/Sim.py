@@ -32,6 +32,10 @@ rocket = Rocket()
 
     ### LOOP ###
 
+timer = 0
+lap = 0
+prositionY_last = 0.0
+timer_toggle = False
 running = True
 last_time = time.time()
 
@@ -47,13 +51,16 @@ while running:
                 rocket.theta += 1
             elif event.key == pygame.K_SPACE: # toggles the launched state on and off when pressing the spacebar
                 rocket.launched = not rocket.launched
+                if rocket.launched:
+                    timer = 0
+                    timer_toggle = False
             elif event.key == pygame.K_x: # shuts down the program when pressing x
                 running = False
-
 
     current_time = time.time()
     dt = current_time - last_time
     last_time = current_time
+    timer += dt
 
     rocket.dynamics_step(dt)
 
@@ -74,6 +81,12 @@ while running:
     # The coordinate system has origo in the top left corner and the y-axis increases downwards. units = cm
     rocket_alt = (screen_height - 65) - rocket.positionY * 10 * 3/4
     rocket_pos = (screen_width/2) - rocket.positionX * 10 * 3/4
+
+    if rocket.positionY > 100.0 and not prositionY_last > 100.0 and rocket.launched:
+        lap = timer
+        timer_toggle = True
+
+    prositionY_last = rocket.positionY
 
     rocket_center = (rocket_pos, rocket_alt)
     rotated_image = pygame.transform.rotate(rocket_image, rocket.theta)
@@ -100,13 +113,22 @@ while running:
     text_info_1 = font_small.render(f'Use RIGHT / LEFT arrows to increase / decrease theta', True, (255, 255, 1))
     text_info_2 = font_small.render(f'Press SPACE to launch rocket', True, (255, 255, 1))
     text_info_3 = font_small.render(f'Press X to quit', True, (255, 255, 1))
-    text_info_4 = font_small.render(f'100m', True, (255, 255, 1))
-    text_info_5 = font_small.render(f'10m', True, (255, 255, 1))
+    if not timer_toggle:
+        text_info_4 = font_small.render(f'Time (to 100m): {round(timer, 1)}s', True, (255, 255, 1))
+    else:
+        text_info_4 = font_small.render(f'Time (to 100m): {round(lap, 1)}s', True, (255, 255, 1))
+    #text_info_5 = font_small.render(f'Lap: {round(lap, 1)}', True, (255, 255, 1))
+
+    text_info_6 = font_small.render(f'100m', True, (255, 255, 1))
+    text_info_7 = font_small.render(f'10m', True, (255, 255, 1))
+
     screen.blit(text_info_1, (10, 10))
     screen.blit(text_info_2, (10, 30))
     screen.blit(text_info_3, (10, 50))
-    screen.blit(text_info_4, (10, (alt_line100 + 10)))
-    screen.blit(text_info_5, (10, (alt_line10 + 10)))
+    screen.blit(text_info_4, (10, 80))
+    #screen.blit(text_info_5, (130, 80))
+    screen.blit(text_info_6, (10, (alt_line100 + 10)))
+    screen.blit(text_info_7, (10, (alt_line10 + 10)))
 
     pygame.display.flip()
     clock.tick(60)

@@ -22,7 +22,7 @@ class Rocket(object):
         self.area   = 0.004     # m2
         self.rho    = 1.225     # kgm-3
         self.g      = 9.81      # ms-2
-        self.T      = 30       # N
+        self.T      = 30        # N
 
 
     def dynamics_step(self, dt):
