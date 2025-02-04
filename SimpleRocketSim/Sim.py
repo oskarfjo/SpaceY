@@ -15,8 +15,8 @@ if SCREEN == 1:
     screen_width = 1080
     screen_height = 1840
 else:
-    screen_height = 1200
-    screen_width = 1200 * 1080/1840
+    screen_height = 990
+    screen_width = screen_height * 1080/1840
 
 screen = pygame.display.set_mode((screen_width, screen_height)) # makes the window. window dimentions = (width, height)
 clock = pygame.time.Clock()
@@ -25,7 +25,7 @@ font_small = pygame.font.Font(None, 24)
 imported_rocket_image = pygame.image.load('rocket_img.png')
 imported_moon_image = pygame.image.load('moon_img.png')
 imported_hills_image = pygame.image.load('hills_img.png')
-rocket_image = pygame.transform.scale(imported_rocket_image, (15, 40)) # Scales the picture of the rocket in the simulator. units = cm
+rocket_image = pygame.transform.scale(imported_rocket_image, (15, 40)) # Scales the picture of the rocket in the simulator. 
 moon_image = pygame.transform.scale(imported_moon_image, (200, 200))
 hills_image = pygame.transform.scale(imported_hills_image, (screen_width, (135/256 * screen_width)))
 rocket = Rocket()
@@ -72,8 +72,8 @@ while running:
     pygame.draw.rect(screen, (200, 200, 100), [0, (screen_height - 40) , screen_width, 250])
 
     # The coordinate system has origo in the top left corner and the y-axis increases downwards. units = cm
-    rocket_alt = (screen_height - 65) - rocket.positionY * 10
-    rocket_pos = (screen_width/2) - rocket.positionX * 10
+    rocket_alt = (screen_height - 65) - rocket.positionY * 10 * 3/4
+    rocket_pos = (screen_width/2) - rocket.positionX * 10 * 3/4
 
     rocket_center = (rocket_pos, rocket_alt)
     rotated_image = pygame.transform.rotate(rocket_image, rocket.theta)
@@ -82,10 +82,10 @@ while running:
 
     ### info text in the simulator ###
 
-    alt_line100 = (screen_height - 65) - 1000
+    alt_line100 = (screen_height - 65) - 1000 * 3/4
     pygame.draw.line(screen, (255, 255, 1), (0, alt_line100), (screen_width, alt_line100), 1)
 
-    alt_line10 = (screen_height - 65) - 100
+    alt_line10 = (screen_height - 65) - 100 * 3/4
     pygame.draw.line(screen, (255, 255, 1), (0, alt_line10), (screen_width, alt_line10), 1)
 
     text_theta      = font.render(f'Theta: {round(rocket.theta, 2)} deg', True, (10, 10, 10))
