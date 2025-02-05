@@ -26,9 +26,6 @@ hills_image = pygame.transform.scale(imported_hills_image, (screen_width, (135/2
 rocket = Rocket()
 
 timer = 0
-lap = 0
-prositionY_last = 0.0
-timer_toggle = False
 running = True
 last_time = time.time()
 
@@ -52,7 +49,6 @@ while running:
                 rocket.launched = not rocket.launched
                 if rocket.launched:
                     timer = 0
-                    timer_toggle = False
             elif event.key == pygame.K_x: # shuts down the program when pressing x
                 running = False
 
@@ -63,10 +59,10 @@ while running:
         timer += dt
 
     rocket.dynamics_step(dt) # runs the step function in Rocket.py
+    rocket.timer(dt)
 
     ### Aestetics ###
     screen.fill((31, 62, 90)) # makes the background
-    #pygame.draw.line(screen, (200, 200, 0), (screen_width/2, 0), (screen_width/2, screen_height))
     hills_height = screen_height - 10
     hills_center = (screen_width/2, hills_height)
     hills_rect = hills_image.get_rect(center=hills_center)
@@ -78,14 +74,9 @@ while running:
     screen.blit(moon_image, moon_rect)
     pygame.draw.rect(screen, (200, 200, 100), [0, (screen_height - 40) , screen_width, 250])
 
-    # The coordinate system has origo in the top left corner and the y-axis increases downwards. units = cm
-    rocket_alt = (screen_height - 65) - rocket.positionY * 10 * 3/4
+    # The coordinate system has origo in the top left corner and the z-axis increases downwards. units = cm
+    rocket_alt = (screen_height - 65) - rocket.positionZ * 10 * 3/4
     rocket_pos = (screen_width/2) - rocket.positionX * 10 * 3/4
-
-    if rocket.positionY > 100.0 and not prositionY_last > 100.0 and rocket.launched: # checks if the rocket passed 100 meters since last dt
-        lap = timer
-        timer_toggle = True
-    prositionY_last = rocket.positionY
 
     ### configures the rocket in the sim ###
     rocket_center = (rocket_pos, rocket_alt)
@@ -94,41 +85,30 @@ while running:
     screen.blit(rotated_image, rotated_rect)
 
     ### info/text in the sim ###
-
     alt_line100 = (screen_height - 65) - 1000 * 3/4
     pygame.draw.line(screen, (255, 255, 1), (0, alt_line100), (screen_width, alt_line100), 1)
-
     alt_line10 = (screen_height - 65) - 100 * 3/4
     pygame.draw.line(screen, (255, 255, 1), (0, alt_line10), (screen_width, alt_line10), 1)
 
     text_theta      = font.render(f'Theta: {round(rocket.theta, 2)} deg', True, (10, 10, 10))
     text_launched   = font.render(f'Thrust: {rocket.launched}', True, (10, 10, 10))
-    text_altitude   = font.render(f'Altitude: {round(rocket.positionY)}m', True, (10, 10, 10))
-    #text_motor      = font.render(f'TTW: {round(rocket.T / (rocket.mass * rocket.g), 2)}', True, (10, 10, 10))
+    text_altitude   = font.render(f'Altitude: {round(rocket.positionZ)}m', True, (10, 10, 10))
     screen.blit(text_theta, (30, (screen_height - 30)))
     screen.blit(text_altitude, (200, (screen_height - 30)))
     screen.blit(text_launched, (380, (screen_height - 30)))
-    #screen.blit(text_motor, ((screen_width - 150), (screen_height - 30)))
 
     text_info_1 = font_small.render(f'Use RIGHT / LEFT arrows to increase / decrease theta', True, (255, 255, 1))
     text_info_2 = font_small.render(f'Press SPACE to launch rocket', True, (255, 255, 1))
     text_info_3 = font_small.render(f'Press X to quit', True, (255, 255, 1))
-    if not timer_toggle:
-        text_info_4 = font_small.render(f'Time (to 100m): {round(timer, 2)}s', True, (255, 255, 1))
-    else:
-        text_info_4 = font_small.render(f'Time (to 100m): {round(lap, 2)}s', True, (255, 255, 1))
-    #text_info_5 = font_small.render(f'Lap: {round(lap, 1)}', True, (255, 255, 1))
-
-    text_info_6 = font_small.render(f'100m', True, (255, 255, 1))
-    text_info_7 = font_small.render(f'10m', True, (255, 255, 1))
-
+    text_info_4 = font_small.render(f'Time: {round(timer, 2)}s', True, (255, 255, 1))
+    text_info_5 = font_small.render(f'100m', True, (255, 255, 1))
+    text_info_6 = font_small.render(f'10m', True, (255, 255, 1))
     screen.blit(text_info_1, (10, 10))
     screen.blit(text_info_2, (10, 30))
     screen.blit(text_info_3, (10, 50))
     screen.blit(text_info_4, (10, 80))
-    #screen.blit(text_info_5, (130, 80))
-    screen.blit(text_info_6, (10, (alt_line100 + 10)))
-    screen.blit(text_info_7, (10, (alt_line10 + 10)))
+    screen.blit(text_info_5, (10, (alt_line100 + 10)))
+    screen.blit(text_info_6, (10, (alt_line10 + 10)))
 
     pygame.display.flip()
     clock.tick(60)
