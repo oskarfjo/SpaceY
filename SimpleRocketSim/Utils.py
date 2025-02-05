@@ -4,8 +4,8 @@ import random
 
 class functions:
 
-    def noise(sd):
-        return np.random.normal(0, sd)
+    def noise(ex, sd):
+        return np.random.normal(ex, sd)
     
     def sig_test(sig):
         if math.isnan(sig):

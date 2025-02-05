@@ -103,9 +103,9 @@ class Rocket(object):
                 self.velocityZ = 0
 
             if DEBUG:
-                print(f'position = [{self.positionX}, {self.positionZ}]m')
-                print(f'velocity = [{self.velocityX}, {self.velocityZ}ms-1')
-                print(f'acceleration = {acceleration} ms-2')
-                print(f'F_drag = {F_drag} N, F_thrust = {F_thrust} N, F_net = {F_sum} N')
+                print(f'position = [{round(self.positionX, 2)}, {round(self.positionZ, 2)}]m')
+                print(f'velocity = [{round(self.velocityX, 2)}, {round(self.velocityZ, 2)}]ms-1')
+                print(f'acceleration = [{round(acceleration[0], 2)}, {round(acceleration[1], 2)}]ms-2')
+                print(f'F_drag = [{round(F_drag[0], 2)}, {round(F_drag[1], 2)}] N, F_thrust = [{round(F_thrust[0], 2)}, {round(F_thrust[1], 2)}] N, F_net = [{round(F_sum[0], 2)}, {round(F_sum[1], 2)}] N')
                 print(f'TTW: {round(abs(F_thrust[1] / (F_gravity[1])), 2)}')
 
