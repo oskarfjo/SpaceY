@@ -4,6 +4,11 @@ import random
 
 class functions:
 
+    def moment_inertia(mass, Sd, Sh): # , S
+        I_S = mass * (Sd/2)**2 / 4 + mass * Sh**2 / 12 # + mass * Sl**2
+        I_C = 0 #
+        return 0.3* I_S + I_C
+
     def noise(ex, sd):
         return np.random.normal(ex, sd)
     
