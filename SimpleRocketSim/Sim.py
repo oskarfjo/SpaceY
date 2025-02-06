@@ -50,9 +50,9 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RIGHT and rocket.alpha >= -12: # -1 degree when pressing the right arrowkey
+            if event.key == pygame.K_RIGHT and rocket.alpha > -8: # -1 degree when pressing the right arrowkey
                 rocket.alpha -= 1
-            elif event.key == pygame.K_LEFT and rocket.alpha <= 12: # +1 degree when pressing the left arrowkey
+            elif event.key == pygame.K_LEFT and rocket.alpha < 8: # +1 degree when pressing the left arrowkey
                 rocket.alpha += 1
             elif event.key == pygame.K_SPACE: # toggles the launched state on and off when pressing the spacebar
                 rocket.launched = not rocket.launched
@@ -115,7 +115,7 @@ while running:
     text_theta          = font.render(f'Theta: {round(rocket.theta, 2)} deg', True, text_color2)
     text_launched       = font.render(f'Thrust: {rocket.launched}', True, text_color2)
     text_altitude       = font.render(f'Altitude: {round(rocket.positionZ)}m', True, text_color2)
-    text_acceleration   = font.render(f'Acceleration: {round(abs(rocket.acceleration/9.81))}g', True, text_color2)
+    text_acceleration   = font.render(f'Acceleration: {round(abs(rocket.acceleration/9.81), 1)}g', True, text_color2)
     screen.blit(text_theta, (30, (screen_height - 30)))
     screen.blit(text_altitude, (250, (screen_height - 30)))
     screen.blit(text_launched, (470, (screen_height - 30)))

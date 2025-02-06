@@ -4,6 +4,7 @@ import math
 from Utils import functions as mu
 
 DEBUG = True
+WIND = True
 
 class Rocket(object):
     def __init__(self):
@@ -14,13 +15,16 @@ class Rocket(object):
         self.theta      = 0 # deg
         self.theta_last = 0 # deg
         self.alpha      = 0 # deg
-        self.launched   = False
-        self.velocityZ  = 0.0   # m/s
-        self.velocityX  = 0.0   # m/s
-        self.acceleration = 0.0 # m/s2
-        self.clock      = 0.0   # s
-        self.time_step  = 0.0
-        self.n          = 0
+        self.wind       = 0
+
+        self.launched = False
+
+        self.velocityZ      = 0.0   # m/s
+        self.velocityX      = 0.0   # m/s
+        self.acceleration   = 0.0 # m/s2
+        self.clock          = 0.0   # s
+        self.time_step      = 0.0
+        self.n              = 0
 
         ### MOTORS ###
         self.cluster    = 3
@@ -30,8 +34,8 @@ class Rocket(object):
         ### PARAMETERS ###
         self.mass       = 1.3       # kg
         self.CD0        = 0.25
-        self.rho        = 1.225     # kgm-3
-        self.g          = 9.81      # ms-2
+        self.rho        = 1.225     # kg/m3
+        self.g          = 9.81      # m/s2
         self.diameter   = 75e-3     # xx mm to 0,0xx m
         self.length     = 50e-2     # xx cm to 0.xx m
 
@@ -45,15 +49,22 @@ class Rocket(object):
             self.clock = 0.0
         return
 
+
+        #####################
+        #### LOCAL UTILS ####
+        #####################
+
+
     ## takes the angle of the gimbal and calculates a new theta from the torque and inertia ##
     def computed_rocket_angle(self, alpha, thrust, drag, dt):
         thrust_mag = np.linalg.norm(thrust)
         drag_mag = np.linalg.norm(drag)
-        F = thrust_mag*self.thruster_pos*np.sin(np.deg2rad(alpha)) + drag_mag*self.cop_pos*np.sin(np.deg2rad(self.theta))
+        F = thrust_mag*self.thruster_pos*np.sin(np.deg2rad(alpha)) + drag_mag*self.cop_pos*np.sin(np.deg2rad(self.theta)) + self.wind
         I = mu.moment_inertia(self.mass, self.diameter, self.length)
         theta_next = F * dt**2/I + 2*self.theta - self.theta_last # computes theta[n+1]
         if DEBUG:
             print(f'theta[n-1] = {round(self.theta_last, 2)}, theta[n] = {round(self.theta, 2)}, theta[n+1] = {round(theta_next, 2)}')
+            print(f'tau = {F}')
         self.theta_last = self.theta # updates theta[n-1]
         self.theta = theta_next # updates theta[n]
 
@@ -85,9 +96,20 @@ class Rocket(object):
         force = self.thrust_magnitude(self.cluster*self.D9, self.clock) # dynamic scalar force in Newtons
         return np.array([force * np.sin(np.deg2rad(angle)), force * np.cos(np.deg2rad(angle))])
 
+
+        ##############
+        #### STEP ####
+        ##############
+
+
     def dynamics_step(self, dt):
             ### Simulating dynamics ###
         if True:
+            if WIND:
+                self.wind += mu.noise(0, 0.1) * dt
+                self.wind = mu.saturate(self.wind, -1, 1)
+            else:
+                self.wind = 0
 
             # adds the thrust force only when the rocket is in the launched state
             if self.launched:
@@ -113,7 +135,7 @@ class Rocket(object):
             self.positionZ += dt * self.velocityZ
             self.positionX += dt * self.velocityX
 
-            ### computes the angle theta[n + 1] ###
+            ### computes the angle theta[n+1] ###
             if self.positionZ > 0:
                 self.computed_rocket_angle(self.alpha, F_thrust, F_drag, dt)
 
@@ -129,10 +151,12 @@ class Rocket(object):
                 self.velocityZ = 0
 
             if DEBUG:
+                print(f'is launched = {self.launched}')
                 print(f'position = [{round(self.positionX, 2)}, {round(self.positionZ, 2)}]m')
-                print(f'velocity = [{round(self.velocityX, 2)}, {round(self.velocityZ, 2)}]ms-1')
-                print(f'acceleration = [{round(acceleration[0], 2)}, {round(acceleration[1], 2)}]ms-2')
+                print(f'velocity = [{round(self.velocityX, 2)}, {round(self.velocityZ, 2)}]m/s')
+                print(f'acceleration = [{round(acceleration[0], 2)}, {round(acceleration[1], 2)}]m/s2')
                 print(f'F_drag = [{round(F_drag[0], 2)}, {round(F_drag[1], 2)}] N, F_thrust = [{round(F_thrust[0], 2)}, {round(F_thrust[1], 2)}] N, F_net = [{round(F_sum[0], 2)}, {round(F_sum[1], 2)}] N')
                 print(f'TTW: {round(abs(F_thrust[1] / (F_gravity[1])), 2)}')
-                print(f'angle = {self.alpha}')
-
+                print(f'Gimbal angle = {self.alpha}')
+                if WIND:
+                    print(f'Wind = {round(self.wind, 2)}')
