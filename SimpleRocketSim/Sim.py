@@ -15,7 +15,7 @@ TEST = False
 pygame.init()
 
 screen_height = 990
-screen_width = 900 # screen_height * 1080/1840
+screen_width = 900
 
 screen = pygame.display.set_mode((screen_width, screen_height)) # makes the window. window dimentions = (width, height)
 clock = pygame.time.Clock()
@@ -43,13 +43,17 @@ plt.ion()  # Interactive mode on
 fig, ax = plt.subplots(figsize=(8, 6))
 zero_line = []
 angle_data = []
+IMU_data = []
 time_data = []
 
 ax.set_title('Rocket angle over time')
 ax.set_xlabel('Time (s)')
 ax.set_ylabel('angle (deg)')
 line1, = ax.plot(time_data, zero_line, 'k-', label='Setpoint')  # Line at zero
-line2, = ax.plot(time_data, angle_data, 'r-', label='Angle')  # Line for angle
+line2, = ax.plot(time_data, IMU_data, 'b-', label='IMU measurement')
+line3, = ax.plot(time_data, angle_data, 'r-', label='Real angle')  # Line for angle
+
+ax.grid()
 ax.legend()
 
 timer = 0.0
@@ -59,8 +63,8 @@ running = True
 dead = False
 last_time = time.time()
 
-# Define the window length (60 seconds)
-window_length = 60
+# Define the window length (30 seconds)
+window_length = 30
 
     ############
     ### LOOP ###
@@ -106,6 +110,8 @@ while running:
     if not dead:
         if ctrl:
             rocket.alpha = controll.PD(rocket.theta, dt)
+        else:
+            controll.PD(rocket.theta, dt)
         rocket.dynamics_step(dt) # runs the step function in Rocket.py
         rocket.timer(dt)
 
@@ -113,6 +119,7 @@ while running:
     elapsed_time = current_time - start_time
     zero_line.append(0.0)
     angle_data.append(rocket.theta)
+    IMU_data.append(controll.theta_m)
     time_data.append(elapsed_time)
 
     # Remove old data to keep only the last 60 seconds
@@ -120,12 +127,15 @@ while running:
         time_data.pop(0)
         zero_line.pop(0)
         angle_data.pop(0)
+        IMU_data.pop(0)
     
     # Update the lines for both position and setpoint
     line1.set_xdata(time_data)
     line1.set_ydata(zero_line)
     line2.set_xdata(time_data)
-    line2.set_ydata(angle_data)
+    line2.set_ydata(IMU_data)
+    line3.set_xdata(time_data)
+    line3.set_ydata(angle_data)
     
     # Rescale the plot to fit the last 60 seconds
     ax.set_xlim(max(0, elapsed_time - window_length), elapsed_time)
@@ -194,7 +204,7 @@ while running:
     screen.blit(alt_line100_text, (10, (alt_line100 + 10)))
     screen.blit(alt_line10_text, (10, (alt_line10 + 10)))
 
-    if rocket.theta < -99.0 or rocket.theta > 99.0 or dead: # death screen
+    if rocket.launched and rocket.theta < -99.0 or rocket.launched and rocket.theta > 99.0 or dead: # death screen
         dead = True
         screen.blit(overlay, (0, 0))
         timer = 0.0

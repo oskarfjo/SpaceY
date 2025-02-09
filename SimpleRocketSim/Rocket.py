@@ -5,31 +5,34 @@ from Utils import functions as mu
 from Ctrl import Regulator as kt
 
 DEBUG = True
-WIND = True
+WIND = False
 
 class Rocket(object):
     def __init__(self):
 
         ### DYNAMIC VALUES ###
-        self.positionZ  = 0.0 # m
-        self.positionX  = 0.0 # m
-        self.theta      = 0.0 # deg
-        self.theta_last = 0.0 # deg
-        self.alpha      = 0.0 # deg
+        self.positionZ = 0.0 # m
+        self.positionX = 0.0 # m
+
+        self.theta          = 0.0 # deg
+        self.theta_last     = 0.0 # deg
+        self.alpha          = 0.0 # deg
+
         self.wind       = 0.0
         self.thrust_cur = 0.0 # N
-        
+
         self.launched = False
 
-        self.velocityZ      = 0.0   # m/s
-        self.velocityX      = 0.0   # m/s
-        self.acceleration   = 0.0 # m/s2
-        self.clock          = 0.0   # s
-        self.time_step      = 0.0
-        self.n              = 0
+        self.velocityZ    = 0.0   # m/s
+        self.velocityX    = 0.0   # m/s
+        self.acceleration = 0.0   # m/s2
+
+        self.clock     = 0.0   # s
+        self.time_step = 0.0
+        self.n         = 0
 
         ### MOTORS ###
-        self.cluster    = 4
+        self.cluster = 4
 
         D9_motor = np.array([5, 20, 12, 8.7, 8.7, 8.7, 8.7, 8.7, 8.7, 8.7, 8.7]) # n = 0,25s
         D9_time = 2.1 #s
@@ -62,14 +65,13 @@ class Rocket(object):
         #### LOCAL UTILS ####
         #####################
 
-
     ## takes the angle of the gimbal and calculates a new theta from the torque and inertia ##
     def computed_rocket_angle(self, alpha, thrust, drag, dt):
         thrust_mag = np.linalg.norm(thrust)
         drag_mag = np.linalg.norm(drag)
         F = thrust_mag*self.thruster_pos*np.sin(np.deg2rad(alpha)) + drag_mag*self.cop_pos*np.sin(np.deg2rad(self.theta)) + self.wind
         I = mu.moment_inertia(self.mass, self.diameter, self.length)
-        theta_next = F * dt**2/I + 2*self.theta - self.theta_last # computes theta[n+1]
+        theta_next = mu.mapToDeg(F * dt**2/I + 2*self.theta - self.theta_last) # computes theta[n+1]
         if DEBUG:
             print(f'theta[n-1] = {round(self.theta_last, 2)}, theta[n] = {round(self.theta, 2)}, theta[n+1] = {round(theta_next, 2)}')
             print(f'tau = {F}')
@@ -114,7 +116,7 @@ class Rocket(object):
             ### Simulating dynamics ###
         if True:
             if WIND:
-                self.wind += mu.noise(0.0, 0.2) * dt
+                self.wind = mu.noise(10, 0.1) * dt
                 self.wind = mu.saturate(self.wind, -1.0, 1.0)
             else:
                 self.wind = 0.0
