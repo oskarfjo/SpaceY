@@ -35,7 +35,7 @@ moon_image = pygame.transform.scale(imported_moon_image, (150, 150))
 hills_image = pygame.transform.scale(imported_hills_image, (screen_width, (135/256 * screen_width)))
 rocket = Rocket()
 
-timer = 0
+timer = 0.0
 running = True
 dead = False
 last_time = time.time()
@@ -59,17 +59,17 @@ while running:
             elif event.key == pygame.K_SPACE: # toggles the launched state on and off when pressing the spacebar
                 rocket.launched = not rocket.launched
                 if rocket.launched:
-                    timer = 0
+                    timer = 0.0
             elif event.key == pygame.K_r:
                 rocket.launched = False
-                rocket.alpha = 0
-                rocket.theta = 0
-                rocket.theta_last = 0
-                rocket.positionX = 0
-                rocket.positionZ = 0
-                rocket.velocityX = 0
-                rocket.velocityZ = 0
-                rocket.clock = 0
+                rocket.alpha = 0.0
+                rocket.theta = 0.0
+                rocket.theta_last = 0.0
+                rocket.positionX = 0.0
+                rocket.positionZ = 0.0
+                rocket.velocityX = 0.0
+                rocket.velocityZ = 0.0
+                rocket.clock = 0.0
                 dead = False
             elif event.key == pygame.K_x: # shuts down the program when pressing x
                 running = False
@@ -137,10 +137,10 @@ while running:
     screen.blit(text_info_5, (10, (alt_line100 + 10)))
     screen.blit(text_info_6, (10, (alt_line10 + 10)))
 
-    if rocket.theta < -99 or rocket.theta > 99 or dead: # death screen
+    if rocket.theta < -99.0 or rocket.theta > 99.0 or dead: # death screen
         dead = True
         screen.blit(overlay, (0, 0))
-        timer = 0
+        timer = 0.0
         game_over_text = font_large.render(f'WASTED', True, (255, 1, 1))
         restart_text = font.render(f'Press R to restart', True, (255, 1, 1))
         pygame.draw.rect(overlay, (1, 1, 1), [0, (screen_height/2 - 125) , screen_width, 250])

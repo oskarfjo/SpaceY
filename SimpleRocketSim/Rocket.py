@@ -4,18 +4,18 @@ import math
 from Utils import functions as mu
 
 DEBUG = True
-WIND = True
+WIND = False
 
 class Rocket(object):
     def __init__(self):
 
         ### DYNAMIC VALUES ###
-        self.positionZ  = 0 # m
-        self.positionX  = 0 # m
-        self.theta      = 0 # deg
-        self.theta_last = 0 # deg
-        self.alpha      = 0 # deg
-        self.wind       = 0
+        self.positionZ  = 0.0 # m
+        self.positionX  = 0.0 # m
+        self.theta      = 0.0 # deg
+        self.theta_last = 0.0 # deg
+        self.alpha      = 0.0 # deg
+        self.wind       = 0.0
 
         self.launched = False
 
@@ -27,12 +27,18 @@ class Rocket(object):
         self.n              = 0
 
         ### MOTORS ###
-        self.cluster    = 3
-        self.burn_time = 2.1 # s
-        self.D9 = np.array([5, 20, 12, 8.7, 8.7, 8.7, 8.7, 8.7, 8.7, 8.7, 8.7]) # n = 0,25s
+        self.cluster    = 4
+
+        D9_motor = np.array([5, 20, 12, 8.7, 8.7, 8.7, 8.7, 8.7, 8.7, 8.7, 8.7]) # n = 0,25s
+        D9_time = 2.1 #s
+        D3_motor = np.array([0, 3, 9, 5, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]) # n = 0,25s
+        D3_time = 5.5 # s
+
+        self.motor = D3_motor
+        self.burn_time = D3_time
 
         ### PARAMETERS ###
-        self.mass       = 1.3       # kg
+        self.mass       = 0.9       # kg
         self.CD0        = 0.25
         self.rho        = 1.225     # kg/m3
         self.g          = 9.81      # m/s2
@@ -70,11 +76,11 @@ class Rocket(object):
 
     ## gives the thrust a dynamic magnitude in accordance to the datasheet ##
     def thrust_magnitude(self, array, time):
-        if time > self.burn_time:
+        if time >= self.burn_time:
             self.n = 0
             self.time_step = 0.0
             self.launched = False
-            return 0
+            return 0.0
         elif time >= self.time_step + 0.25: # jumps to the next val in the array every 0,25s
             self.n +=1
             self.time_step += 0.25
@@ -93,7 +99,7 @@ class Rocket(object):
     
     ## calculates the total magnitude of the thrust force at the current time ##
     def thrust(self, angle):
-        force = self.thrust_magnitude(self.cluster*self.D9, self.clock) # dynamic scalar force in Newtons
+        force = self.thrust_magnitude(self.cluster*self.motor, self.clock) # dynamic scalar force in Newtons
         return np.array([force * np.sin(np.deg2rad(angle)), force * np.cos(np.deg2rad(angle))])
 
 
@@ -106,10 +112,10 @@ class Rocket(object):
             ### Simulating dynamics ###
         if True:
             if WIND:
-                self.wind += mu.noise(0, 0.1) * dt
-                self.wind = mu.saturate(self.wind, -1, 1)
+                self.wind += mu.noise(0.0, 0.1) * dt
+                self.wind = mu.saturate(self.wind, -1.0, 1.0)
             else:
-                self.wind = 0
+                self.wind = 0.0
 
             # adds the thrust force only when the rocket is in the launched state
             if self.launched:
@@ -142,13 +148,13 @@ class Rocket(object):
                 ### QOL ###
 
             # makes borders at the edges of the screen so that the rocket cant go out of sight
-            self.positionZ = mu.saturate(self.positionZ, 0, 122)
-            self.positionX = mu.saturate(self.positionX, -59, 59)
+            self.positionZ = mu.saturate(self.positionZ, 0.0, 122.0)
+            self.positionX = mu.saturate(self.positionX, -59.0, 59.0)
 
             # Stops the rocket from simulating movement when it is at the borders
-            if self.positionZ == 0 or self.positionZ == 122:
-                self.velocityX = 0
-                self.velocityZ = 0
+            if self.positionZ == 0.0 or self.positionZ == 122.0:
+                self.velocityX = 0.0
+                self.velocityZ = 0.0
 
             if DEBUG:
                 print(f'is launched = {self.launched}')
