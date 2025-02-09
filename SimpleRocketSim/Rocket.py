@@ -2,9 +2,10 @@ import numpy as np
 import random
 import math
 from Utils import functions as mu
+from Ctrl import Regulator as kt
 
 DEBUG = True
-WIND = False
+WIND = True
 
 class Rocket(object):
     def __init__(self):
@@ -16,7 +17,8 @@ class Rocket(object):
         self.theta_last = 0.0 # deg
         self.alpha      = 0.0 # deg
         self.wind       = 0.0
-
+        self.thrust_cur = 0.0 # N
+        
         self.launched = False
 
         self.velocityZ      = 0.0   # m/s
@@ -112,7 +114,7 @@ class Rocket(object):
             ### Simulating dynamics ###
         if True:
             if WIND:
-                self.wind += mu.noise(0.0, 0.1) * dt
+                self.wind += mu.noise(0.0, 0.2) * dt
                 self.wind = mu.saturate(self.wind, -1.0, 1.0)
             else:
                 self.wind = 0.0
@@ -120,9 +122,11 @@ class Rocket(object):
             # adds the thrust force only when the rocket is in the launched state
             if self.launched:
                 F_thrust = self.thrust(self.theta + self.alpha) # thrusts in a direction that combines the angle of the rocket and the gimbal angle
+                self.thrust_cur = np.linalg.norm(F_thrust)
             else:
                 F_thrust = np.array([0, 0])
                 self.clock = 0.0
+                self.thrust_cur = np.linalg.norm(F_thrust)
 
             F_gravity = np.array([0, -self.mass * self.g]) # vector for gravity in 2D
 

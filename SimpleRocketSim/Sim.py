@@ -5,8 +5,10 @@ import numpy as np
 import time
 from Rocket import Rocket
 import matplotlib.pyplot as plt
+from Ctrl import Regulator
 
 DEBUG = True
+TEST = False
 
     ### init ###
 
@@ -33,13 +35,32 @@ imported_hills_image = pygame.image.load('hills_img.png')
 rocket_image = pygame.transform.scale(imported_rocket_image, (15, 40)) # Scales the picture of the rocket in the simulator. 
 moon_image = pygame.transform.scale(imported_moon_image, (150, 150))
 hills_image = pygame.transform.scale(imported_hills_image, (screen_width, (135/256 * screen_width)))
+
 rocket = Rocket()
+controll = Regulator()
+
+plt.ion()  # Interactive mode on
+fig, ax = plt.subplots(figsize=(8, 6))
+zero_line = []
+angle_data = []
+time_data = []
+
+ax.set_title('Rocket angle over time')
+ax.set_xlabel('Time (s)')
+ax.set_ylabel('angle (deg)')
+line1, = ax.plot(time_data, zero_line, 'k-', label='Setpoint')  # Line at zero
+line2, = ax.plot(time_data, angle_data, 'r-', label='Angle')  # Line for angle
+ax.legend()
 
 timer = 0.0
+start_time = time.time()
+ctrl = False
 running = True
 dead = False
 last_time = time.time()
 
+# Define the window length (60 seconds)
+window_length = 60
 
     ############
     ### LOOP ###
@@ -52,14 +73,16 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RIGHT and rocket.alpha > -8: # -1 degree when pressing the right arrowkey
+            if event.key == pygame.K_RIGHT and rocket.alpha > -8 and ctrl == False: # -1 degree when pressing the right arrowkey
                 rocket.alpha -= 1
-            elif event.key == pygame.K_LEFT and rocket.alpha < 8: # +1 degree when pressing the left arrowkey
+            elif event.key == pygame.K_LEFT and rocket.alpha < 8 and ctrl == False: # +1 degree when pressing the left arrowkey
                 rocket.alpha += 1
             elif event.key == pygame.K_SPACE: # toggles the launched state on and off when pressing the spacebar
                 rocket.launched = not rocket.launched
                 if rocket.launched:
                     timer = 0.0
+            elif event.key == pygame.K_c:
+                ctrl = not ctrl
             elif event.key == pygame.K_r:
                 rocket.launched = False
                 rocket.alpha = 0.0
@@ -81,8 +104,36 @@ while running:
         timer += dt
 
     if not dead:
+        if ctrl:
+            rocket.alpha = controll.PD(rocket.theta, dt)
         rocket.dynamics_step(dt) # runs the step function in Rocket.py
         rocket.timer(dt)
+
+    # Update data for plotting
+    elapsed_time = current_time - start_time
+    zero_line.append(0.0)
+    angle_data.append(rocket.theta)
+    time_data.append(elapsed_time)
+
+    # Remove old data to keep only the last 60 seconds
+    while time_data and time_data[-1] - time_data[0] > window_length:
+        time_data.pop(0)
+        zero_line.pop(0)
+        angle_data.pop(0)
+    
+    # Update the lines for both position and setpoint
+    line1.set_xdata(time_data)
+    line1.set_ydata(zero_line)
+    line2.set_xdata(time_data)
+    line2.set_ydata(angle_data)
+    
+    # Rescale the plot to fit the last 60 seconds
+    ax.set_xlim(max(0, elapsed_time - window_length), elapsed_time)
+    ax.relim()
+    ax.autoscale_view()
+
+    fig.canvas.draw()
+    fig.canvas.flush_events()
 
     ### Aestetics ###
     screen.fill(sky_color) # makes the background
@@ -102,7 +153,10 @@ while running:
     rocket_pos = (screen_width/2) - rocket.positionX * 10 * 3/4
 
     ### configures the rocket in the sim ###
-    rocket_center = (rocket_pos, rocket_alt)
+    if TEST:
+        rocket_center = (screen_width/2, screen_height/2)
+    else:
+        rocket_center = (rocket_pos, rocket_alt)
     rotated_image = pygame.transform.rotate(rocket_image, rocket.theta)
     rotated_rect = rotated_image.get_rect(center=rocket_center)
     screen.blit(rotated_image, rotated_rect)
@@ -124,18 +178,21 @@ while running:
     screen.blit(text_acceleration, (670, (screen_height - 30)))
 
     ## TOP TEXT ###
-    text_info_1 = font_small.render(f'Use RIGHT / LEFT arrows to increase / decrease theta', True, text_color1)
+    text_info_1 = font_small.render(f'Use RIGHT / LEFT arrows to decrease / increase theta or press C to activate PD', True, text_color1)
     text_info_2 = font_small.render(f'Press SPACE to launch rocket', True, text_color1)
     text_info_3 = font_small.render(f'Press X to quit', True, text_color1)
     text_info_4 = font_small.render(f'Time: {round(timer, 2)}s', True, text_color1)
-    text_info_5 = font_small.render(f'100m', True, text_color1)
-    text_info_6 = font_small.render(f'10m', True, text_color1)
+    text_ctrl   = font_small.render(f'Controll = {ctrl}', True, text_color1)
     screen.blit(text_info_1, (10, 10))
     screen.blit(text_info_2, (10, 30))
     screen.blit(text_info_3, (10, 50))
     screen.blit(text_info_4, (10, 80))
-    screen.blit(text_info_5, (10, (alt_line100 + 10)))
-    screen.blit(text_info_6, (10, (alt_line10 + 10)))
+    screen.blit(text_ctrl,   (10, 100))
+
+    alt_line100_text = font_small.render(f'100m', True, text_color1)
+    alt_line10_text = font_small.render(f'10m', True, text_color1)
+    screen.blit(alt_line100_text, (10, (alt_line100 + 10)))
+    screen.blit(alt_line10_text, (10, (alt_line10 + 10)))
 
     if rocket.theta < -99.0 or rocket.theta > 99.0 or dead: # death screen
         dead = True
