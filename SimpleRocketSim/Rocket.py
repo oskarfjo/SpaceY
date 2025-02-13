@@ -17,6 +17,7 @@ class Rocket(object):
         self.theta          = 0.0 # deg
         self.theta_last     = 0.0 # deg
         self.alpha          = 0.0 # deg
+        self.gimbal_set     = 0.0
 
         self.wind       = 0.0
         self.thrust_cur = 0.0 # N
@@ -106,6 +107,12 @@ class Rocket(object):
         force = self.thrust_magnitude(self.cluster*self.motor, self.clock) # dynamic scalar force in Newtons
         return np.array([force * np.sin(np.deg2rad(angle)), force * np.cos(np.deg2rad(angle))])
 
+    ## simulates latency in the gimbal mechanism ##
+    def gimbal(self):
+        gimbal_error = -(self.alpha - self.gimbal_set)
+        latency = 0.5
+        if True:
+            self.alpha += gimbal_error * latency
 
         ##############
         #### STEP ####
@@ -154,11 +161,11 @@ class Rocket(object):
                 ### QOL ###
 
             # makes borders at the edges of the screen so that the rocket cant go out of sight
-            self.positionZ = mu.saturate(self.positionZ, 0.0, 122.0)
+            self.positionZ = mu.saturate(self.positionZ, 0.0, 1220.0)
             self.positionX = mu.saturate(self.positionX, -59.0, 59.0)
 
             # Stops the rocket from simulating movement when it is at the borders
-            if self.positionZ == 0.0 or self.positionZ == 122.0:
+            if self.positionZ == 0.0: # or self.positionZ == 122.0:
                 self.velocityX = 0.0
                 self.velocityZ = 0.0
 
@@ -169,6 +176,6 @@ class Rocket(object):
                 print(f'acceleration = [{round(acceleration[0], 2)}, {round(acceleration[1], 2)}]m/s2')
                 print(f'F_drag = [{round(F_drag[0], 2)}, {round(F_drag[1], 2)}] N, F_thrust = [{round(F_thrust[0], 2)}, {round(F_thrust[1], 2)}] N, F_net = [{round(F_sum[0], 2)}, {round(F_sum[1], 2)}] N')
                 print(f'TTW: {round(abs(F_thrust[1] / (F_gravity[1])), 2)}')
-                print(f'Gimbal angle = {self.alpha}')
+                print(f'Gimbal angle = {round(self.alpha, 4)}')
                 if WIND:
                     print(f'Wind = {round(self.wind, 2)}')

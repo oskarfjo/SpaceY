@@ -9,12 +9,15 @@ class Regulator(object):
         self.theta_last = 0.0
         self.theta_m = 0.0
 
-
     def IMU(self, angle):
         noise = np.random.normal(0, 3)
         self.theta_m = angle + noise
         return self.theta_m
-        
+    
+    ##############
+    #### CTRL ####
+    ##############
+    
     def PD(self, theta, dt):
         self.IMU(theta) # generates a noisy theta measurement
         theta_m = theta

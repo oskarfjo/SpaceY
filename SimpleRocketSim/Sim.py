@@ -77,10 +77,10 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RIGHT and rocket.alpha > -8 and ctrl == False: # -1 degree when pressing the right arrowkey
-                rocket.alpha -= 1
-            elif event.key == pygame.K_LEFT and rocket.alpha < 8 and ctrl == False: # +1 degree when pressing the left arrowkey
-                rocket.alpha += 1
+            if event.key == pygame.K_RIGHT and rocket.gimbal_set > -8 and ctrl == False: # -1 degree when pressing the right arrowkey
+                rocket.gimbal_set -= 1
+            elif event.key == pygame.K_LEFT and rocket.gimbal_set < 8 and ctrl == False: # +1 degree when pressing the left arrowkey
+                rocket.gimbal_set += 1
             elif event.key == pygame.K_SPACE: # toggles the launched state on and off when pressing the spacebar
                 rocket.launched = not rocket.launched
                 if rocket.launched:
@@ -109,9 +109,10 @@ while running:
 
     if not dead:
         if ctrl:
-            rocket.alpha = controll.PD(rocket.theta, dt)
+            rocket.gimbal_set = controll.PD(rocket.theta, dt)
         else:
             controll.PD(rocket.theta, dt)
+        rocket.gimbal()
         rocket.dynamics_step(dt) # runs the step function in Rocket.py
         rocket.timer(dt)
 
