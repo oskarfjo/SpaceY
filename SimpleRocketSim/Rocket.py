@@ -5,7 +5,7 @@ from Utils import functions as mu
 from Ctrl import Regulator as kt
 
 DEBUG = True
-WIND = False
+WIND = True
 
 class Rocket(object):
     def __init__(self):
@@ -123,8 +123,11 @@ class Rocket(object):
             ### Simulating dynamics ###
         if True:
             if WIND:
-                self.wind = mu.noise(10, 0.1) * dt
+                self.wind += mu.noise(0, 0.1) * dt
                 self.wind = mu.saturate(self.wind, -1.0, 1.0)
+                stocastic_1 = random.randint(1, 1000)
+                if stocastic_1 >= 990:
+                    self.wind *= -1
             else:
                 self.wind = 0.0
 
