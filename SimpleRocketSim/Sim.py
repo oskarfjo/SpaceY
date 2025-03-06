@@ -9,6 +9,7 @@ from Ctrl import Regulator
 
 DEBUG = True
 TEST = False
+GRAPH = False
 
     ### init ###
 
@@ -39,7 +40,8 @@ hills_image = pygame.transform.scale(imported_hills_image, (screen_width, (135/2
 rocket = Rocket()
 controll = Regulator()
 
-plt.ion()  # Interactive mode on
+if GRAPH:
+    plt.ion()
 fig, ax = plt.subplots(figsize=(8, 6))
 zero_line = []
 angle_data = []
