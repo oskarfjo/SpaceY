@@ -104,9 +104,9 @@ void initSensors(){
 void readImu(float imuData[12]){
     sensors_event_t accel, gyro, mag_data, temp;
 
-    // Leser av imu
+    // reads imu
     imu.getEvent(&accel, &gyro, &temp);
-    // Leser av magnetometer
+    // reads magnetometer
     mag.getEvent(&mag_data);
 
     cal.calibrate(mag_data);
@@ -131,6 +131,10 @@ void readImu(float imuData[12]){
     imuData[0] = heading;
     imuData[1] = pitch;
     imuData[2] = roll;
+    imuData[3] = gx;
+    imuData[4] = gy;
+    imuData[5] = gz;
+    
     /*
     Serial.print("Orientation: ");
     Serial.print(heading);

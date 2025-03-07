@@ -26,6 +26,9 @@ const int gimbalLim = 8; // +- deg
 double servoPitchAngle = 0.0, gimbalPitchAngle = 0.0; // deg
 double servoRollAngle = 0.0, gimbalRollAngle = 0.0; // deg
 double servoPitchSet = 0.0, servoRollSet = 0.0; // deg
+double servoPitchAnglePrev = 0.0, servoRollAnglePrev = 0.0;
+
+const double maxServoChange = 0.3 * 1/(0.04/60); // 0,04 s for 60 deg : 1500*0.3 = maxDeg pr. s
 
 // for arm connection
 const double servoPitchArm = 8.0, gimbalPitchArm = 37; // mm
@@ -42,8 +45,8 @@ float imuData[12]; // array for imu data ; [heading, pitch, roll][0,0,0][0,0,0][
 float barData[3]; // array for barometer data
 float gpsData[10]; // array for gps data
 
-double pitchMeasured = 0.0, rollMeasured = 0.0;
-
+float pitchMeasured = 0.0, rollMeasured = 0.0;
+float deltaRollMeasured = 0.0, deltaPitchMeasured = 0.0;
 
 
 // CTRL //
@@ -55,13 +58,11 @@ double kd = 0.7;
 const double pitchSet = 0.0, rollSet = 90.0;
 
 // store of values from last loop
+/*
 double pitchErrorPrev = 0.0;
 double rollErrorPrev = 0.0;
+*/
 unsigned long timePrev = 0;
-
-
-// PWM GENERATOR //
-const int freq = 50;
 
 
 //////////
@@ -81,8 +82,10 @@ void setup() {
 
   // sets the prev values for the first loop
   readSensors();
+  /*
   pitchErrorPrev = pitchSet - pitchMeasured;
   rollErrorPrev = rollSet - rollMeasured;
+  */
   timePrev = micros();
 
   /*
@@ -91,6 +94,7 @@ void setup() {
   pitchSet = imuData[1], rollSet = imuData[2];
   */
 }
+
 
 //////////
 // LOOP //
@@ -127,6 +131,9 @@ void readSensors() {
   // updates the measurement variables to the latest imu reading from sensor.ccp
   rollMeasured = imuData[2];
   pitchMeasured = imuData[1];
+
+  deltaRollMeasured = imuData[5];
+  deltaPitchMeasured = imuData[4];
 }
 
 
@@ -136,9 +143,13 @@ void ctrl() {
   double pitchError = pitchSet - pitchMeasured;
 
   // calculates the rate of change for the error
-  // andreas should see if sensor data could be used directly
+  /*
   double pitchDotError = (pitchError - pitchErrorPrev) / dt;
   double rollDotError = (rollError - rollErrorPrev) / dt;
+  */
+  
+  float pitchDotError = - deltaPitchMeasured;
+  float rollDotError = - deltaRollMeasured;
 
   // PD controller for the gimbal. u = Ctrl input
   double uPitch = pitchError*kp + pitchDotError*kd;
@@ -148,9 +159,9 @@ void ctrl() {
   gimbalPitchAngle = constrain(uPitch, -gimbalLim, gimbalLim);
   gimbalRollAngle = constrain(uRoll, -gimbalLim, gimbalLim);
 
-  // updates error prev
+  /* //updates error prev
   pitchErrorPrev = pitchError;
-  rollErrorPrev = rollError;
+  rollErrorPrev = rollError;*/
 }
 
 
@@ -166,6 +177,15 @@ void gimbalToServo() {
   servoPitchAngle = - gimbalPitchAngle * gimbalPitchRad / servoPitchRad;
   servoRollAngle = - gimbalRollAngle * gimbalRollRad / servoRollRad;
   */
+
+
+  double maxChange = maxServoChange * dt;
+
+  servoPitchAngle = constrain(servoPitchAngle, servoPitchAnglePrev - maxChange, servoPitchAnglePrev + maxChange);
+  servoRollAngle = constrain(servoRollAngle, servoRollAnglePrev - maxChange, servoRollAnglePrev + maxChange);
+
+  servoPitchAnglePrev = servoPitchAngle;
+  servoRollAnglePrev = servoRollAngle;
 }
 
 
@@ -203,6 +223,7 @@ void debugPrint() {
     
     
     // sensor data
+    // NB! Wrong names for indexing
     case SENSORS:
       Serial.print("Pressure: "); Serial.println(barData[0]);
       Serial.print("Temperature: "); Serial.println(barData[1]);
