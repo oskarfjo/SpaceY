@@ -1,0 +1,13 @@
+#include <Servo.h>
+
+Servo ESC;
+int value;
+
+void setup() {
+    ESC.attach(9, 1000, 2000);
+}
+
+void loop() {
+    value = 80;
+    ESC.write(value);
+}
