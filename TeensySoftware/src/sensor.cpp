@@ -31,27 +31,41 @@
 // Sensor objekt
 Adafruit_ISM330DHCX imu;
 Adafruit_LIS3MDL mag;
-Adafruit_Mahony filter; // kan byttast til MadGwick
+Adafruit_Mahony ilter; // kan byttast til MadGwick
+Adafruit_Madgwick filter;
 Adafruit_DPS310 bar = Adafruit_DPS310();
 
 Adafruit_GPS GPS(&GPS_SERIAL);
 RH_RF95 rf95(RFM95_CS);
 
+bool calInit = false;
 
 void initSensors(){
     Wire.begin();
     Wire.setClock(400000);
     GPS_SERIAL.begin(GPS_BAUD);
     filter.begin(FILTER_UPDATE_RATE_HZ);
+    filter.setBeta(0.3);
+
+    if (false) {
+    for(int i=0; i<20; i++) {
+        // For 90° roll: gravity is along X axis (instead of Z), magnetometer along Y/Z
+        // These values simulate readings from sensors in your desired orientation
+        filter.update(0, 0, 0,                // gyro (no rotation)
+                     0.996, 0, -0.087,               // accel (gravity along X due to 90° roll)
+                     0, 1.0, 0);             // mag (arbitrary alignment for yaw)
+        delay(2);
+      }
+    }
 
     if (!imu.begin_I2C()){
         Serial.println("Failed to initialize ISM330DHCX!");
         return;
     }
     imu.setAccelRange(LSM6DS_ACCEL_RANGE_2_G);
-    imu.setGyroRange(LSM6DS_GYRO_RANGE_2000_DPS);
-    imu.setAccelDataRate(LSM6DS_RATE_208_HZ);
-    imu.setGyroDataRate(LSM6DS_RATE_208_HZ);
+    imu.setGyroRange(LSM6DS_GYRO_RANGE_500_DPS);
+    imu.setAccelDataRate(LSM6DS_RATE_104_HZ);
+    imu.setGyroDataRate(LSM6DS_RATE_104_HZ);
     Serial.println("ISM330DHCX initialized!");
 
     if (!mag.begin_I2C()){
@@ -109,10 +123,13 @@ void readImu(float imuData[12]){
     // reads magnetometer
     mag.getEvent(&mag_data);
 
+    if (!calInit) {
     cal.calibrate(mag_data);
     cal.calibrate(accel);
     cal.calibrate(gyro);
-
+    calInit = true;
+    }
+    
     // Convert gyro readings to degrees per second
     float gx = gyro.gyro.x * SENSORS_RADS_TO_DPS;
     float gy = gyro.gyro.y * SENSORS_RADS_TO_DPS;
@@ -145,7 +162,7 @@ void readImu(float imuData[12]){
     */
     
     // Print the quaternion for advanced use
-    float qw, qx, qy, qz;
+    //float qw, qx, qy, qz;
     /*filter.getQuaternion(&qw, &qx, &qy, &qz);
     Serial.print("Quaternion: ");
     Serial.print(qw, 4);

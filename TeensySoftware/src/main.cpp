@@ -28,12 +28,6 @@ double servoPitchSet = 0.0, servoRollSet = 0.0; // deg
 
 const double maxServoChange = 0.3 * 1/(0.04/60); // 0,04 s for 60 deg : 1500*0.3 = maxDeg pr. s
 
-/*
-// for arm connection
-const double servoPitchArm = 8.0, gimbalPitchArm = 37; // mm
-const double servoRollArm = 7.0, gimbalRollArm = 35; // mm
-*/
-
 // for gear connection
 const double servoPitchRad = 7.7, gimbalPitchRad = 63.0; // mm
 const double servoRollRad = 7.7, gimbalRollRad = 63.0; // mm
@@ -51,19 +45,23 @@ float deltaRollMeasured = 0.0, deltaPitchMeasured = 0.0;
 // CTRL //
 double dt = 0.0; // dynamic dt value that addapts to system frequency
 
-double kp = 0.9;
-double kd = 0.4;
-double ki = 0.1;
+double kp = 0.25;
+double kd = 0.15;
+double ki = 0.05;
 
 double pitchSet = 0.0, rollSet = 90.0;
 double pitchDotError = 0.0, rollDotError = 0.0;
 
-double alpha = 0.2;
+double alpha = 0.06;
 double filteredPitchDotError = 0.0;
 double filteredRollDotError = 0.0;
 
-double pitchErrorPrev = 0.0, rollErrorPrev = 0.0;
+double pitchMeasuredPrev = 0.0, rollMeasuredPrev = 0.0;
 double pitchErrorInt = 0.0, rollErrorInt = 0.0;
+
+const double MAX_P_CONTRIBUTION = gimbalLim;
+const double MAX_I_CONTRIBUTION = 0.5*gimbalLim;
+const double MAX_D_CONTRIBUTION = 0.3*gimbalLim;
 
 // store of values from last loop
 unsigned long timePrev = 0;
@@ -84,12 +82,12 @@ void setup() {
   initSensors();
 
   // delay to let the imu initialize
-  delay(1000);
+  delay(2000);
 
   timePrev = micros();
 
   // defines the angle setpoints
-  //readImu(imuData);
+  //readSensors();
   //pitchSet = pitchMeasured, rollSet = rollMeasured;
 }
 
@@ -117,6 +115,8 @@ void updateTime() {
   unsigned long timeCur = micros(); // time now in micros ; 10^{-6}s
   dt = (timeCur - timePrev) * 1e-6; // dt in seconds
   timePrev = timeCur; // updates timePrev
+  Serial.print(F("dt: ")); Serial.println(dt, 5);
+  Serial.println(" ");
 }
 
 
@@ -132,6 +132,10 @@ void readSensors() {
 
   deltaRollMeasured = imuData[5];
   deltaPitchMeasured = imuData[3];
+
+  Serial.print(F("IMU pitch: ")); Serial.print(pitchMeasured);
+  Serial.print(F("\tIMU roll: ")); Serial.println(rollMeasured);
+  Serial.println("");
 }
 
 
@@ -141,26 +145,19 @@ void ctrl() {
   // calculates the current error
   double pitchError = pitchSet - pitchMeasured;
   double rollError = rollSet - rollMeasured;
-  if (abs(pitchError) < 0.05) pitchError = 0;
-  if (abs(rollError) < 0.05) rollError = 0;
+  if (abs(pitchError) < 0.0005) pitchError = 0;
+  if (abs(rollError) < 0.0005) rollError = 0;
 
   // D //
   if (dt < 0.001) {
     pitchDotError = 0.0;
     rollDotError = 0.0;
-  } else if (false) { // uses error
-  pitchDotError = (pitchError - pitchErrorPrev)/dt;
-  rollDotError = (rollError - rollErrorPrev)/dt;
-  if (abs(pitchDotError) < 0.5) pitchDotError = 0.0;
-  if (abs(rollDotError) < 0.5) rollDotError = 0.0;
-  } else { // uses measurement UNTESTED
-    pitchDotError = - (pitchMeasured - pitchErrorPrev)/dt;
-    rollDotError = - (rollMeasured - rollErrorPrev)/dt;
-    if (abs(pitchDotError) < 0.5) pitchDotError = 0.0;
-    if (abs(rollDotError) < 0.5) rollDotError = 0.0;
+    } else {
+    pitchDotError = - (pitchMeasured - pitchMeasuredPrev)/dt;
+    rollDotError = - (rollMeasured - rollMeasuredPrev)/dt;
     }
-  pitchErrorPrev = pitchMeasured; 
-  rollErrorPrev = rollMeasured;
+  pitchMeasuredPrev = pitchMeasured; 
+  rollMeasuredPrev = rollMeasured;
 
   // D filter (lowpass)
   filteredPitchDotError = alpha * pitchDotError + (1-alpha) * filteredPitchDotError;
@@ -169,25 +166,25 @@ void ctrl() {
   filteredRollDotError = constrain(filteredRollDotError, -gimbalLim/kd, gimbalLim/kd);
 
   // I //
-  if (abs(pitchError) < 3) {
+  if (abs(pitchError) < 20) {
   pitchErrorInt += dt * constrain(pitchError, -gimbalLim, gimbalLim); // integrates error, constrained to prevent large jumps
   pitchErrorInt = constrain(pitchErrorInt, -0.6*gimbalLim/ki, 0.6*gimbalLim/ki); // constrains the resulting value to 80% of gimbal limit
   } else {
     pitchErrorInt = 0.0;
   }
-  if (abs(rollError) < 3) {
+  if (abs(rollError) < 20) {
   rollErrorInt += dt * constrain(rollError, -gimbalLim, gimbalLim);
   rollErrorInt = constrain(rollErrorInt, -0.6*gimbalLim/ki, 0.6*gimbalLim/ki);
   } else {
     rollErrorInt = 0.0;
   }
 
-  double pP = constrain(pitchError*kp, -gimbalLim, gimbalLim), rP = constrain(rollError*kp, -gimbalLim, gimbalLim);
-  double pI = pitchErrorInt*ki, rI = rollErrorInt*ki;
-  double pD = filteredPitchDotError*kd, rD = filteredRollDotError*kd;
+  double pP = constrain(pitchError*kp, -MAX_P_CONTRIBUTION, MAX_P_CONTRIBUTION), rP = constrain(rollError*kp, -MAX_P_CONTRIBUTION, MAX_P_CONTRIBUTION);
+  double pI = constrain(pitchErrorInt*ki, -MAX_I_CONTRIBUTION, MAX_I_CONTRIBUTION), rI = constrain(rollErrorInt*ki, -MAX_I_CONTRIBUTION, MAX_I_CONTRIBUTION);
+  double pD = constrain(filteredPitchDotError*kd, -MAX_D_CONTRIBUTION, MAX_D_CONTRIBUTION), rD = constrain(filteredRollDotError*kd, -MAX_D_CONTRIBUTION, MAX_D_CONTRIBUTION);
 
-  if (abs(pD < 0.15)) pD = 0.0;
-  if (abs(rD < 0.15)) rD = 0.0;
+  if (abs(pD) < 0.15) pD = 0.0;
+  if (abs(rD) < 0.15) rD = 0.0;
   // PID
   double uPitch = pP + pI + pD;
   double uRoll = rP + rI + rD;
