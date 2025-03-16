@@ -11,6 +11,7 @@ void updateTime();
 void ctrl();
 void updateServos();
 void debugPrint();
+void calibrateSensors();
 
 enum DebugMode {
   OFF = 0,
@@ -18,17 +19,18 @@ enum DebugMode {
   SENSORS = 2,
 };
 
-DebugMode debugMode = OFF;
+DebugMode debugMode = CTRL;
 
 // GIMBAL PARAMS //
 const int gimbalLim = 7; // +- deg
+
 double servoPitchAngle = 0.0, gimbalPitchAngle = 0.0; // deg
 double servoRollAngle = 0.0, gimbalRollAngle = 0.0; // deg
 double servoPitchSet = 0.0, servoRollSet = 0.0; // deg
 
 const double maxServoChange = 0.3 * 1/(0.04/60); // 0,04 s for 60 deg : 1500*0.3 = maxDeg pr. s
 
-// for gear connection
+// gear geometry
 const double servoPitchRad = 7.7, gimbalPitchRad = 63.0; // mm
 const double servoRollRad = 7.7, gimbalRollRad = 63.0; // mm
 
@@ -38,34 +40,26 @@ float imuData[12]; // array for imu data ; [heading, pitch, roll][0,0,0][0,0,0][
 float barData[3]; // array for barometer data
 float gpsData[10]; // array for gps data
 
-float pitchMeasured = 0.0, rollMeasured = 0.0;
-float deltaRollMeasured = 0.0, deltaPitchMeasured = 0.0;
+float pitchMeasured = 0.0, rollMeasured = 0.0; // orientation in deg
+float deltaRollMeasured = 0.0, deltaPitchMeasured = 0.0; // angular velocity in deg/s
 
 
 // CTRL //
 double dt = 0.0; // dynamic dt value that addapts to system frequency
 
-double kp = 0.25;
-double kd = 0.15;
-double ki = 0.05;
+const double pitchSet = 0.0, rollSet = 90.0;
 
-double pitchSet = 0.0, rollSet = 90.0;
-double pitchDotError = 0.0, rollDotError = 0.0;
-
-double alpha = 0.06;
-double filteredPitchDotError = 0.0;
-double filteredRollDotError = 0.0;
-
-double pitchMeasuredPrev = 0.0, rollMeasuredPrev = 0.0;
+double filteredPitchDotError = 0.0, filteredRollDotError = 0.0;
 double pitchErrorInt = 0.0, rollErrorInt = 0.0;
 
 const double MAX_P_CONTRIBUTION = gimbalLim;
 const double MAX_I_CONTRIBUTION = 0.5*gimbalLim;
-const double MAX_D_CONTRIBUTION = 0.3*gimbalLim;
+const double MAX_D_CONTRIBUTION = 0.8*gimbalLim;
 
 // store of values from last loop
 unsigned long timePrev = 0;
 double servoPitchAnglePrev = 0.0, servoRollAnglePrev = 0.0;
+double pitchMeasuredPrev = 0.0, rollMeasuredPrev = 0.0;
 
 //////////
 // INIT //
@@ -79,18 +73,14 @@ void setup() {
   pinMode(2, OUTPUT);
   pinMode(3, OUTPUT);
 
+  // init sensors and allow the sensors to run for the filter to calibrate
   initSensors();
-
-  // delay to let the imu initialize
   delay(2000);
+  calibrateSensors();
 
+  // init prev values
   timePrev = micros();
-
-  // defines the angle setpoints
-  //readSensors();
-  //pitchSet = pitchMeasured, rollSet = rollMeasured;
 }
-
 
 //////////
 // LOOP //
@@ -115,10 +105,18 @@ void updateTime() {
   unsigned long timeCur = micros(); // time now in micros ; 10^{-6}s
   dt = (timeCur - timePrev) * 1e-6; // dt in seconds
   timePrev = timeCur; // updates timePrev
-  Serial.print(F("dt: ")); Serial.println(dt, 5);
-  Serial.println(" ");
 }
 
+void calibrateSensors() {
+  for (int i = 0; i < 1000; i++) {
+      readSensors();
+      Serial.println(("Calibrating..."));
+      Serial.print(F("pitchMeasured: ")); Serial.println(pitchMeasured);
+      Serial.print(F("rollMeasured")); Serial.println(rollMeasured);
+      Serial.println(" ");
+  }
+  //pitchSet = pitchMeasured, rollSet = rollMeasured;
+}
 
 void readSensors() {
   // fetches the latest sensor data
@@ -127,103 +125,146 @@ void readSensors() {
   readGps(gpsData);
   
   // updates the measurement variables to the latest imu reading from sensor.ccp
-  rollMeasured = imuData[2];
+  pitchMeasuredPrev = pitchMeasured;
+  rollMeasuredPrev = rollMeasured;
+
   pitchMeasured = imuData[1];
+  rollMeasured = imuData[2];
 
-  deltaRollMeasured = imuData[5];
-  deltaPitchMeasured = imuData[3];
-
-  Serial.print(F("IMU pitch: ")); Serial.print(pitchMeasured);
-  Serial.print(F("\tIMU roll: ")); Serial.println(rollMeasured);
-  Serial.println("");
+  deltaPitchMeasured = imuData[5];
+  deltaRollMeasured = imuData[3];
 }
 
 
+double tanhErrorMapping(double error) { // UNUSED
+  double sensitivity = 5;  
+  double mappedError = gimbalLim * tanh(error * 1/sensitivity);
+  return mappedError; // smoth mapping. fixes: errors over gimbalLim is hard-constrained and looses proportionality
+  }
+
+  
+double requiredForceEstimator(double currentAngle, double desiredAngle, double previousAngle) {
+  // Simplified physical model for andreas' required-force-estimation (pat pending) //
+
+  // NB! model from simple rocket sim //
+  // F_tot = T*l_T*sin(alpha) + F_D*l_D*sin(theta) //
+  // theta[n+1] = F_tot * ((dt^2)/I) + 2*theta[n] - theta[n-1] //
+  // theta[n+1] = setpoint //
+  
+  // define constants
+  const double calcTime = 0.39; // s : dt for the calculation to be realistic/achievable
+  const double thrustMomentArm = 0.3; // m : distance from thruster to CM
+  const double thrust = 12; // N : thrust magnitude
+  const double inertia = 0.2; // moment of inertia (ESTIMATED)
+  
+  // calculate required angular acceleration
+  double angularAccel = (desiredAngle - 2*currentAngle + previousAngle) / (calcTime*calcTime);
+  
+  // calculate required gimbal angle (alpha)
+  double tauRequired = inertia * angularAccel * dt/calcTime;
+  double tauThrust = thrust * thrustMomentArm;
+  double tauDrag = 0.0; // drag is rounded to 0 because it is at most 0.05*thrust
+  double ratio = constrain(tauRequired / (tauThrust + tauDrag), -1, 1);
+  double requiredGimbalAngle = asin(ratio) * 180/PI;
+
+  // constrain to gimbal limits
+  requiredGimbalAngle = constrain(requiredGimbalAngle, -gimbalLim, gimbalLim);
+
+  if (false) { // set to true for estimator debugging, NB! also choose to estimate only roll, or only pitch
+  Serial.print(F("currentAngle: ")); Serial.println(currentAngle);
+  Serial.print(F("desiredAngle: ")); Serial.println(desiredAngle);
+  Serial.print(F("previousAngle: ")); Serial.println(previousAngle);
+  Serial.print(F("dt: ")); Serial.println(dt, 5);
+  Serial.print(F("angularAccel: ")); Serial.println(angularAccel);
+  Serial.print(F("tauRequired: ")); Serial.println(tauRequired);
+  Serial.print(F("Ratio (unconstrained): ")); Serial.println(tauRequired/tauThrust);
+  Serial.print(F("result - requiredGimbalAngle: ")); Serial.println(requiredGimbalAngle);
+}
+  return requiredGimbalAngle;
+}
+
 void ctrl() {
+  double kp = 0.5;
+  double kd = 0.35;
+  double ki = 0.3;
+  double dGain = 0.3;
+  double reqGain = 0.2;
 
   // P //
-  // calculates the current error
   double pitchError = pitchSet - pitchMeasured;
   double rollError = rollSet - rollMeasured;
-  if (abs(pitchError) < 0.0005) pitchError = 0;
-  if (abs(rollError) < 0.0005) rollError = 0;
 
   // D //
-  if (dt < 0.001) {
-    pitchDotError = 0.0;
-    rollDotError = 0.0;
-    } else {
-    pitchDotError = - (pitchMeasured - pitchMeasuredPrev)/dt;
-    rollDotError = - (rollMeasured - rollMeasuredPrev)/dt;
-    }
-  pitchMeasuredPrev = pitchMeasured; 
-  rollMeasuredPrev = rollMeasured;
+  double pitchDotError = deltaPitchMeasured;
+  double rollDotError = -deltaRollMeasured;
 
   // D filter (lowpass)
-  filteredPitchDotError = alpha * pitchDotError + (1-alpha) * filteredPitchDotError;
+  filteredPitchDotError = dGain * pitchDotError + (1-dGain) * filteredPitchDotError;
   filteredPitchDotError = constrain(filteredPitchDotError, -gimbalLim/kd, gimbalLim/kd);
-  filteredRollDotError = alpha * rollDotError + (1-alpha) * filteredRollDotError;
+  filteredRollDotError = dGain * rollDotError + (1-dGain) * filteredRollDotError;
   filteredRollDotError = constrain(filteredRollDotError, -gimbalLim/kd, gimbalLim/kd);
 
-  // I //
-  if (abs(pitchError) < 20) {
+  // I - with windup //
+  if (!(gimbalPitchAngle >= gimbalLim && pitchError > 0) && !(gimbalPitchAngle <= -gimbalLim && pitchError < 0)) {
   pitchErrorInt += dt * constrain(pitchError, -gimbalLim, gimbalLim); // integrates error, constrained to prevent large jumps
-  pitchErrorInt = constrain(pitchErrorInt, -0.6*gimbalLim/ki, 0.6*gimbalLim/ki); // constrains the resulting value to 80% of gimbal limit
-  } else {
-    pitchErrorInt = 0.0;
+  pitchErrorInt = constrain(pitchErrorInt, -0.8*gimbalLim/ki, 0.8*gimbalLim/ki); // constrains the resulting value to 80% of gimbal limit
   }
-  if (abs(rollError) < 20) {
+  if (!(gimbalRollAngle >= gimbalLim && rollError > 0) && !(gimbalRollAngle <= -gimbalLim && rollError < 0)) {
   rollErrorInt += dt * constrain(rollError, -gimbalLim, gimbalLim);
-  rollErrorInt = constrain(rollErrorInt, -0.6*gimbalLim/ki, 0.6*gimbalLim/ki);
-  } else {
-    rollErrorInt = 0.0;
+  rollErrorInt = constrain(rollErrorInt, -0.8*gimbalLim/ki, 0.8*gimbalLim/ki);
   }
+  // integral decays close to setpoint
+  if (abs(pitchError) < 0.01) pitchErrorInt *= 0.999;
+  if (abs(rollError) < 0.01) rollErrorInt *= 0.999;
 
   double pP = constrain(pitchError*kp, -MAX_P_CONTRIBUTION, MAX_P_CONTRIBUTION), rP = constrain(rollError*kp, -MAX_P_CONTRIBUTION, MAX_P_CONTRIBUTION);
   double pI = constrain(pitchErrorInt*ki, -MAX_I_CONTRIBUTION, MAX_I_CONTRIBUTION), rI = constrain(rollErrorInt*ki, -MAX_I_CONTRIBUTION, MAX_I_CONTRIBUTION);
   double pD = constrain(filteredPitchDotError*kd, -MAX_D_CONTRIBUTION, MAX_D_CONTRIBUTION), rD = constrain(filteredRollDotError*kd, -MAX_D_CONTRIBUTION, MAX_D_CONTRIBUTION);
 
-  if (abs(pD) < 0.15) pD = 0.0;
-  if (abs(rD) < 0.15) rD = 0.0;
+  if (abs(pD) < 0.1) pD = 0.0;
+  if (abs(rD) < 0.1) rD = 0.0;
+  
+  double uPitchEstimate = requiredForceEstimator(pitchMeasured, pitchSet, pitchMeasuredPrev);
+  double uRollEstimate = requiredForceEstimator(rollMeasured, rollSet, rollMeasuredPrev);
+  
   // PID
   double uPitch = pP + pI + pD;
   double uRoll = rP + rI + rD;
 
-  // constrains the desired control to the gimbal limit
-  gimbalPitchAngle = constrain(uPitch, -gimbalLim, gimbalLim);
-  gimbalRollAngle = constrain(uRoll, -gimbalLim, gimbalLim);
+  // combines weighted calculated and estimated ctrl-inputs
+  double pCTRL = uPitchEstimate*reqGain + (1-reqGain)*uPitch;
+  double rCTRL = uRollEstimate*reqGain + (1-reqGain)*uRoll;
 
+  // constrains the desired control to the gimbal limit
+  gimbalPitchAngle = constrain(pCTRL, -gimbalLim, gimbalLim);
+  gimbalRollAngle = constrain(rCTRL, -gimbalLim, gimbalLim);
+  
+  if (debugMode == CTRL) {
+  Serial.println(" ");
   Serial.print("Pitch: ");
   Serial.print(F("\tpP: ")); Serial.print(pP);
   Serial.print(F("\tpI: ")); Serial.print(pI);
-  Serial.print(F("\tpD: ")); Serial.print(pD);
-  Serial.print(F("\tPIDp: ")); Serial.println(uPitch);
-
-  
+  Serial.print(F("\tpD: ")); Serial.println(pD);
+  Serial.print(F("PIDp: ")); Serial.println(uPitch, 4);
+  Serial.print(F("pEstimate: ")); Serial.println(uPitchEstimate, 4);
+  Serial.println(" ");
   Serial.print("Roll: ");
   Serial.print(F("\trP: ")); Serial.print(rP);
   Serial.print(F("\trI: ")); Serial.print(rI);
-  Serial.print(F("\trD: ")); Serial.print(rD);
-  Serial.print(F("\tPIDr: ")); Serial.println(uRoll);
-
+  Serial.print(F("\trD: ")); Serial.println(rD);
+  Serial.print(F("PIDr: ")); Serial.println(uRoll, 4);
+  Serial.print(F("rEstimate: ")); Serial.println(uRollEstimate, 4);
   Serial.println(" ");
+  }
 }
 
 
 void gimbalToServo() {
-  // calculates servo setpoints from desired gimbal angle using physical geometry
+  double maxChange = maxServoChange * dt;
 
-  /*
-    // FOR ARMS //
-  servoPitchAngle = asin(constrain((gimbalPitchArm * sin(gimbalPitchAngle * PI/180)) / servoPitchArm, -1, 1)) * (180/PI); // translating deg2rad in the sine function, and translating the answer rad2deg
-  servoRollAngle = -asin(constrain((gimbalRollArm * sin(gimbalRollAngle * PI/180)) / servoRollArm, -1, 1)) * (180/PI); // - prefix because the servo is upside down
-  */
-  
-    // FOR GEARS //
+  // calculates servo setpoints from desired gimbal angle using physical geometry
   servoPitchAngle = - gimbalPitchAngle * gimbalPitchRad / servoPitchRad;
   servoRollAngle = - gimbalRollAngle * gimbalRollRad / servoRollRad;
-
-  double maxChange = maxServoChange * dt;
 
   servoPitchAngle = constrain(servoPitchAngle, servoPitchAnglePrev - maxChange, servoPitchAnglePrev + maxChange);
   servoRollAngle = constrain(servoRollAngle, servoRollAnglePrev - maxChange, servoRollAnglePrev + maxChange);
@@ -254,17 +295,21 @@ void updateServos() {
 void debugPrint() {
   switch (debugMode) {
     // setpoint calculation data
-    case CTRL: 
+    case CTRL:
+      Serial.println(" ");
+      Serial.print(F("dt: ")); Serial.println(dt, 5);
+      Serial.println(" ");
+      Serial.print(F("IMU pitch: ")); Serial.print(pitchMeasured);
+      Serial.print(F("\tIMU roll: ")); Serial.println(rollMeasured);
+      Serial.println("");
       Serial.print(F("Pitch set: ")); Serial.print(pitchSet);
-      Serial.print(F("\tRoll set: ")); Serial.print(rollSet);
-      Serial.print(F("\tPitch measured: ")); Serial.print(pitchMeasured);
-      Serial.print(F("\tPitch gimbal: ")); Serial.print(gimbalPitchAngle);
+      Serial.print(F("\tRoll set: ")); Serial.println(rollSet);
+      Serial.println("");
+      Serial.print(F("Pitch gimbal: ")); Serial.print(gimbalPitchAngle);
       Serial.print(F("\tPitch servo: ")); Serial.print(servoPitchAngle);
-      Serial.print(F("\tRoll measured: ")); Serial.print(rollMeasured);
       Serial.print(F("\tRoll gimbal: ")); Serial.print(gimbalRollAngle);
       Serial.print(F("\tRoll servo: ")); Serial.println(servoRollAngle);
-      //Serial.print(F("Delta-pitch: ")); Serial.print(deltaPitchMeasured);
-      //Serial.print(F("\tDelta-roll: ")); Serial.print(deltaRollMeasured);
+      Serial.println("");
       break;
     
     
