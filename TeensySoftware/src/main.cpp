@@ -28,7 +28,8 @@ double servoPitchAngle = 0.0, gimbalPitchAngle = 0.0; // deg
 double servoRollAngle = 0.0, gimbalRollAngle = 0.0; // deg
 double servoPitchSet = 0.0, servoRollSet = 0.0; // deg
 
-const double maxServoChange = 0.3 * 1/(0.04/60); // 0,04 s for 60 deg : 1500*0.3 = maxDeg pr. s
+// servo specs
+const double maxServoChange = 0.3 * 1/(0.04/60); // 0.04 s for 60 deg : 1500*0.3 = maxDeg pr. s
 
 // gear geometry
 const double servoPitchRad = 7.7, gimbalPitchRad = 63.0; // mm
@@ -61,6 +62,7 @@ unsigned long timePrev = 0;
 double servoPitchAnglePrev = 0.0, servoRollAnglePrev = 0.0;
 double pitchMeasuredPrev = 0.0, rollMeasuredPrev = 0.0;
 
+
 //////////
 // INIT //
 //////////
@@ -81,6 +83,7 @@ void setup() {
   // init prev values
   timePrev = micros();
 }
+
 
 //////////
 // LOOP //
@@ -107,7 +110,13 @@ void updateTime() {
   timePrev = timeCur; // updates timePrev
 }
 
+
 void calibrateSensors() {
+  
+  Serial.println(" ");
+  Serial.println("--- CALIBRATION STARTING ---");
+  Serial.println(" ");
+
   for (int i = 0; i < 1000; i++) {
       readSensors();
       Serial.println(("Calibrating..."));
@@ -115,8 +124,13 @@ void calibrateSensors() {
       Serial.print(F("rollMeasured")); Serial.println(rollMeasured);
       Serial.println(" ");
   }
+  
+  Serial.println("--- CALIBRATION FINISHED ---");
+  Serial.println(" ");
+  
   //pitchSet = pitchMeasured, rollSet = rollMeasured;
 }
+
 
 void readSensors() {
   // fetches the latest sensor data
@@ -137,7 +151,7 @@ void readSensors() {
 
 
 double tanhErrorMapping(double error) { // UNUSED
-  double sensitivity = 5;  
+  double sensitivity = 5;
   double mappedError = gimbalLim * tanh(error * 1/sensitivity);
   return mappedError; // smoth mapping. fixes: errors over gimbalLim is hard-constrained and looses proportionality
   }
@@ -145,11 +159,6 @@ double tanhErrorMapping(double error) { // UNUSED
   
 double requiredForceEstimator(double currentAngle, double currentVelocity, double desiredAngle) {
   // Simplified physical model for andreas' required-force-estimation (pat pending) //
-
-  // NB! model from simple rocket sim //
-  // F_tot = T*l_T*sin(alpha) + F_D*l_D*sin(theta) //
-  // theta[n+1] = F_tot * ((dt^2)/I) + 2*theta[n] - theta[n-1] //
-  // theta[n+1] = setpoint //
   
   // define constants
   const double calcTime = 0.39; // s : dt for the calculation to be realistic/achievable
@@ -158,20 +167,25 @@ double requiredForceEstimator(double currentAngle, double currentVelocity, doubl
   const double inertia = 0.2; // moment of inertia (ESTIMATED)
   
   // calculate required angular acceleration
-  // Using derivative: ((desiredAngle - currentAngle)/calcTime - currentVelocity) / (calcTime);
-  // Using bevegelseslikning: x = x_0 + v_0*t + (1/2)*a*t^2
+  // OLD - Using derivative: ((desiredAngle - currentAngle)/calcTime - currentVelocity) / (calcTime);
+  // Using BeVeGeLsEsLiKnInG: x = x_0 + v_0*t + (1/2)*a*t^2
   // -> a = 2 * (x - x_0 - v_0*t) / t^2
   double angularAccel = 2.0 * (desiredAngle - currentAngle - currentVelocity * calcTime) / (calcTime * calcTime);
   
   // calculate required gimbal angle (alpha)
+  // NB! model from simple rocket sim //
+  // F_tot = T*l_T*sin(alpha) + F_D*l_D*sin(theta) //
+  // theta[n+1] = F_tot * ((dt^2)/I) + 2*theta[n] - theta[n-1] //
+  // theta[n+1] = setpoint //
   double tauRequired = inertia * angularAccel * dt/calcTime;
   double tauThrust = thrust * thrustMomentArm;
   double tauDrag = 0.0; // drag is rounded to 0 because it is at most 0.05*thrust
-  double ratio = constrain(tauRequired / (tauThrust + tauDrag), -1, 1);
+  double ratio = constrain(tauRequired / (tauThrust + tauDrag), -1, 1); // asin gives nan for val outside [-1, 1]
   double requiredGimbalAngle = asin(ratio) * 180/PI;
 
   // constrain to gimbal limits
   requiredGimbalAngle = constrain(requiredGimbalAngle, -gimbalLim, gimbalLim);
+  return requiredGimbalAngle;
 
   if (false) { // set to true for estimator debugging, NB! also choose to estimate only roll, or only pitch
   Serial.print(F("currentAngle: ")); Serial.println(currentAngle);
@@ -182,11 +196,13 @@ double requiredForceEstimator(double currentAngle, double currentVelocity, doubl
   Serial.print(F("tauRequired: ")); Serial.println(tauRequired);
   Serial.print(F("Ratio (unconstrained): ")); Serial.println(tauRequired/tauThrust);
   Serial.print(F("result - requiredGimbalAngle: ")); Serial.println(requiredGimbalAngle);
-}
-  return requiredGimbalAngle;
+  Serial.println(" ");
+  }
 }
 
 void ctrl() {
+  
+  // constants //
   double kp = 0.5;
   double kd = 0.35;
   double ki = 0.3;
@@ -243,11 +259,11 @@ void ctrl() {
   gimbalRollAngle = constrain(rCTRL, -gimbalLim, gimbalLim);
   
   if (debugMode == CTRL) {
-  Serial.println(" ");
   Serial.print("Pitch: ");
   Serial.print(F("\tpP: ")); Serial.print(pP);
   Serial.print(F("\tpI: ")); Serial.print(pI);
   Serial.print(F("\tpD: ")); Serial.println(pD);
+  Serial.println(" ");
   Serial.print(F("PIDp: ")); Serial.print(uPitch, 4);
   Serial.print(F("\tpEstimate: ")); Serial.println(uPitchEstimate, 4);
   Serial.println(" ");
@@ -255,6 +271,7 @@ void ctrl() {
   Serial.print(F("\trP: ")); Serial.print(rP);
   Serial.print(F("\trI: ")); Serial.print(rI);
   Serial.print(F("\trD: ")); Serial.println(rD);
+  Serial.println(" ");
   Serial.print(F("PIDr: ")); Serial.print(uRoll, 4);
   Serial.print(F("\trEstimate: ")); Serial.println(uRollEstimate, 4);
   Serial.println(" ");
@@ -321,28 +338,36 @@ void debugPrint() {
     case SENSORS:
       Serial.print("Pressure: "); Serial.println(barData[0]);
       Serial.print("Temperature: "); Serial.println(barData[1]);
+      Serial.println(" ");
       Serial.print("Accel X: "); Serial.println(imuData[0]);
       Serial.print("Accel Y: "); Serial.println(imuData[1]);
       Serial.print("Accel Z: "); Serial.println(imuData[2]);
+      Serial.println(" ");
       Serial.print("Gyro X: "); Serial.println(imuData[3]);
       Serial.print("Gyro Y: "); Serial.println(imuData[4]);
       Serial.print("Gyro Z: "); Serial.println(imuData[5]);
+      Serial.println(" ");
       Serial.print("Magneto X: "); Serial.println(imuData[6]);
       Serial.print("Magneto Y: "); Serial.println(imuData[7]);
       Serial.print("Magneto Z: "); Serial.println(imuData[8]);
+      Serial.println(" ");
       Serial.print("Roll: "); Serial.println(imuData[9]);
       Serial.print("Pitch: "); Serial.println(imuData[10]);
       Serial.print("Yaw: "); Serial.println(imuData[11]);
+      Serial.println(" ");
       Serial.print("Hour: "); Serial.println(gpsData[0]);
       Serial.print("Min: "); Serial.println(gpsData[1]);
       Serial.print("Sec: "); Serial.println(gpsData[2]);
+      Serial.println(" ");
       Serial.print("Lat: "); Serial.println(gpsData[3], 6);
       Serial.print("Lat_D: "); Serial.println(gpsData[4], 6);
       Serial.print("Lon: "); Serial.println(gpsData[5], 6);
       Serial.print("Lon_D: "); Serial.println(gpsData[6], 6);
+      Serial.println(" ");
       Serial.print("Alt: "); Serial.println(gpsData[7], 6);
       Serial.print("Speed: "); Serial.println(gpsData[8]);
       Serial.print("Sat: "); Serial.println(gpsData[9]);
+      Serial.println(" ");
       break;
 
 
