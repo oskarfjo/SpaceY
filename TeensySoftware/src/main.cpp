@@ -131,7 +131,7 @@ void readSensors() {
   pitchMeasured = imuData[1];
   rollMeasured = imuData[2];
 
-  deltaPitchMeasured = imuData[5];
+  deltaPitchMeasured = -imuData[5];
   deltaRollMeasured = imuData[3];
 }
 
@@ -143,7 +143,7 @@ double tanhErrorMapping(double error) { // UNUSED
   }
 
   
-double requiredForceEstimator(double currentAngle, double desiredAngle, double previousAngle) {
+double requiredForceEstimator(double currentAngle, double currentVelocity, double desiredAngle) {
   // Simplified physical model for andreas' required-force-estimation (pat pending) //
 
   // NB! model from simple rocket sim //
@@ -158,7 +158,10 @@ double requiredForceEstimator(double currentAngle, double desiredAngle, double p
   const double inertia = 0.2; // moment of inertia (ESTIMATED)
   
   // calculate required angular acceleration
-  double angularAccel = (desiredAngle - 2*currentAngle + previousAngle) / (calcTime*calcTime);
+  // Using derivative: ((desiredAngle - currentAngle)/calcTime - currentVelocity) / (calcTime);
+  // Using bevegelseslikning: x = x_0 + v_0*t + (1/2)*a*t^2
+  // -> a = 2 * (x - x_0 - v_0*t) / t^2
+  double angularAccel = 2.0 * (desiredAngle - currentAngle - currentVelocity * calcTime) / (calcTime * calcTime);
   
   // calculate required gimbal angle (alpha)
   double tauRequired = inertia * angularAccel * dt/calcTime;
@@ -173,7 +176,7 @@ double requiredForceEstimator(double currentAngle, double desiredAngle, double p
   if (false) { // set to true for estimator debugging, NB! also choose to estimate only roll, or only pitch
   Serial.print(F("currentAngle: ")); Serial.println(currentAngle);
   Serial.print(F("desiredAngle: ")); Serial.println(desiredAngle);
-  Serial.print(F("previousAngle: ")); Serial.println(previousAngle);
+  Serial.print(F("currentVelocity: ")); Serial.println(currentVelocity);
   Serial.print(F("dt: ")); Serial.println(dt, 5);
   Serial.print(F("angularAccel: ")); Serial.println(angularAccel);
   Serial.print(F("tauRequired: ")); Serial.println(tauRequired);
@@ -195,7 +198,7 @@ void ctrl() {
   double rollError = rollSet - rollMeasured;
 
   // D //
-  double pitchDotError = deltaPitchMeasured;
+  double pitchDotError = -deltaPitchMeasured;
   double rollDotError = -deltaRollMeasured;
 
   // D filter (lowpass)
@@ -224,8 +227,8 @@ void ctrl() {
   if (abs(pD) < 0.1) pD = 0.0;
   if (abs(rD) < 0.1) rD = 0.0;
   
-  double uPitchEstimate = requiredForceEstimator(pitchMeasured, pitchSet, pitchMeasuredPrev);
-  double uRollEstimate = requiredForceEstimator(rollMeasured, rollSet, rollMeasuredPrev);
+  double uPitchEstimate = requiredForceEstimator(pitchMeasured, deltaPitchMeasured, pitchSet);
+  double uRollEstimate = requiredForceEstimator(rollMeasured, deltaRollMeasured, rollSet);
   
   // PID
   double uPitch = pP + pI + pD;
@@ -245,15 +248,15 @@ void ctrl() {
   Serial.print(F("\tpP: ")); Serial.print(pP);
   Serial.print(F("\tpI: ")); Serial.print(pI);
   Serial.print(F("\tpD: ")); Serial.println(pD);
-  Serial.print(F("PIDp: ")); Serial.println(uPitch, 4);
-  Serial.print(F("pEstimate: ")); Serial.println(uPitchEstimate, 4);
+  Serial.print(F("PIDp: ")); Serial.print(uPitch, 4);
+  Serial.print(F("\tpEstimate: ")); Serial.println(uPitchEstimate, 4);
   Serial.println(" ");
   Serial.print("Roll: ");
   Serial.print(F("\trP: ")); Serial.print(rP);
   Serial.print(F("\trI: ")); Serial.print(rI);
   Serial.print(F("\trD: ")); Serial.println(rD);
-  Serial.print(F("PIDr: ")); Serial.println(uRoll, 4);
-  Serial.print(F("rEstimate: ")); Serial.println(uRollEstimate, 4);
+  Serial.print(F("PIDr: ")); Serial.print(uRoll, 4);
+  Serial.print(F("\trEstimate: ")); Serial.println(uRollEstimate, 4);
   Serial.println(" ");
   }
 }
