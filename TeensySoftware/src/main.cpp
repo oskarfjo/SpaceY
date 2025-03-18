@@ -5,9 +5,18 @@
 #include <Adafruit_LIS3MDL.h>
 #include <Adafruit_Sensor_Calibration.h>
 #include "sensor.h"
+#include <FS.h>
+#include <SdFat.h>
 
+SdFat SD;
+FsFile storedData;
+
+bool const logging = false;
+const unsigned long logInterval = 100; // ms
+unsigned long logTimePrev = 0;
+
+void logData();
 void readSensors();
-void updateTime();
 void ctrl();
 void updateServos();
 void debugPrint();
@@ -17,6 +26,7 @@ enum DebugMode {
   OFF = 0,
   CTRL = 1,
   SENSORS = 2,
+  LOGGING = 3,
 };
 
 DebugMode debugMode = CTRL;
@@ -71,6 +81,32 @@ void setup() {
   // begin serial communication at a baudrate of 115200Hz
   Serial.begin(115200);
   
+  if (logging) {
+  while (!Serial) {}
+
+  Serial.println("--- Initializing SD card ---");
+
+  if (!SD.begin(10)) {
+      Serial.println("SD initialization failed!");
+      return;
+    }
+  
+  Serial.println("SD initialized successfully");
+
+  storedData = SD.open("data_log.csv", O_WRITE | O_CREAT | O_APPEND);
+  
+  if (!storedData) {
+    Serial.println("Failed to open log file!");
+    return;
+    }
+
+  if (storedData.fileSize() == 0) {
+    storedData.println("Time, dt, pitchMeasured, rollMeasured, pitchPID, rollPID"); // headers for the csv
+    storedData.flush();
+    }
+  storedData.close();
+  }
+
   // sets the pins for the pitch and roll servos
   pinMode(2, OUTPUT);
   pinMode(3, OUTPUT);
@@ -90,11 +126,18 @@ void setup() {
 //////////
 
 void loop() {
-  updateTime();
+  unsigned long timeCur = micros(); // time now in micros ; 10^{-6}s
+  dt = (timeCur - timePrev) * 1e-6; // dt in seconds
+  timePrev = timeCur; // updates timePrev
 
   readSensors();
   ctrl();
   updateServos();
+
+  if (timeCur - logTimePrev >= logInterval && logging) {
+    logTimePrev = timeCur;
+    logData();
+  }
 
   debugPrint();
 }
@@ -104,10 +147,20 @@ void loop() {
 // FUNCTIONS //
 ///////////////
 
-void updateTime() {
-  unsigned long timeCur = micros(); // time now in micros ; 10^{-6}s
-  dt = (timeCur - timePrev) * 1e-6; // dt in seconds
-  timePrev = timeCur; // updates timePrev
+void logData() {
+  storedData = SD.open("data_log.csv", O_WRITE | O_APPEND);
+
+  if (storedData) {
+    storedData.printf("%lu,%.5f,%.4f,%.4f,%.2f,%.2f\n",
+                      millis(), dt, pitchMeasured, rollMeasured, gimbalPitchAngle, gimbalRollAngle);
+    storedData.flush();
+    storedData.close();
+    if (debugMode == LOGGING) {
+    Serial.println("data logged");
+    }
+  } else {
+    Serial.println("Failed to open loggfile");
+  }
 }
 
 
