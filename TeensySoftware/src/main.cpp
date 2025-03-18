@@ -101,7 +101,7 @@ void setup() {
     }
 
   if (storedData.fileSize() == 0) {
-    storedData.println("Time, dt, pitchMeasured, rollMeasured, pitchPID, rollPID"); // headers for the csv
+    storedData.println("Time, dt, pitchMeasured, rollMeasured, pitchGimbal, rollGimbal, pitchSet, rollSet, pitchError, rollError"); // headers for the csv
     storedData.flush();
     }
   storedData.close();
@@ -151,8 +151,11 @@ void logData() {
   storedData = SD.open("data_log.csv", O_WRITE | O_APPEND);
 
   if (storedData) {
-    storedData.printf("%lu,%.5f,%.4f,%.4f,%.2f,%.2f\n",
-                      millis(), dt, pitchMeasured, rollMeasured, gimbalPitchAngle, gimbalRollAngle);
+    double pitchError = pitchSet - pitchMeasured;
+    double rollError = rollSet - rollMeasured;
+
+    storedData.printf("%lu,%.5f,%.4f,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
+                      millis(), dt, pitchMeasured, rollMeasured, gimbalPitchAngle, gimbalRollAngle, pitchSet, rollSet, pitchError, rollError);
     storedData.flush();
     storedData.close();
     if (debugMode == LOGGING) {
