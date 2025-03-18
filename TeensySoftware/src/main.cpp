@@ -11,11 +11,16 @@
 SdFat SD;
 FsFile storedData;
 
-bool const logging = false;
+bool const logging = true;
 const unsigned long logInterval = 100; // ms
 unsigned long logTimePrev = 0;
 
+const int LOG_BUFFER_SIZE = 20;
+int logBufferCount = 0;
+char logBuffer[LOG_BUFFER_SIZE][128];
+
 void logData();
+void flushLogBuffer();
 void readSensors();
 void ctrl();
 void updateServos();
@@ -82,29 +87,28 @@ void setup() {
   Serial.begin(115200);
   
   if (logging) {
-  while (!Serial) {}
+    while (!Serial) {}
 
-  Serial.println("--- Initializing SD card ---");
+    Serial.println("--- Initializing SD card ---");
 
-  if (!SD.begin(10)) {
+    if (!SD.begin(10)) {
       Serial.println("SD initialization failed!");
       return;
     }
-  
-  Serial.println("SD initialized successfully");
+    
+    Serial.println("SD initialized successfully");
 
-  storedData = SD.open("data_log.csv", O_WRITE | O_CREAT | O_APPEND);
-  
-  if (!storedData) {
-    Serial.println("Failed to open log file!");
-    return;
-    }
+    // Open the file once at startup
+    storedData = SD.open("data_log.csv", O_WRITE | O_CREAT | O_APPEND);
 
-  if (storedData.fileSize() == 0) {
-    storedData.println("Time, dt, pitchMeasured, rollMeasured, pitchGimbal, rollGimbal, pitchSet, rollSet, pitchError, rollError"); // headers for the csv
-    storedData.flush();
+    if (!storedData) {
+      Serial.println("Failed to open log file!");
+      return;
     }
-  storedData.close();
+    if (storedData.fileSize() == 0) {
+      storedData.println("Time, dt, pitchMeasured, rollMeasured, pitchGimbal, rollGimbal, pitchSet, rollSet, pitchError, rollError"); // headers at the top csv
+      storedData.flush();
+    }
   }
 
   // sets the pins for the pitch and roll servos
@@ -148,22 +152,42 @@ void loop() {
 ///////////////
 
 void logData() {
-  storedData = SD.open("data_log.csv", O_WRITE | O_APPEND);
-
-  if (storedData) {
-    double pitchError = pitchSet - pitchMeasured;
-    double rollError = rollSet - rollMeasured;
-
-    storedData.printf("%lu,%.5f,%.4f,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
-                      millis(), dt, pitchMeasured, rollMeasured, gimbalPitchAngle, gimbalRollAngle, pitchSet, rollSet, pitchError, rollError);
-    storedData.flush();
-    storedData.close();
-    if (debugMode == LOGGING) {
-    Serial.println("data logged");
-    }
-  } else {
-    Serial.println("Failed to open loggfile");
+  if (!storedData) {
+    Serial.println("Log file not open!");
+    return;
   }
+
+  double pitchError = pitchSet - pitchMeasured;
+  double rollError = rollSet - rollMeasured;
+
+  snprintf(logBuffer[logBufferCount], 128,
+           "%lu,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
+           millis(), dt, pitchMeasured, rollMeasured, gimbalPitchAngle,
+           gimbalRollAngle, pitchSet, rollSet, pitchError, rollError);
+  
+  logBufferCount++;
+  
+  if (logBufferCount >= LOG_BUFFER_SIZE) {
+    flushLogBuffer();
+  }
+  if (debugMode == LOGGING) {
+    Serial.println("data buffered");
+  }
+}
+
+void flushLogBuffer() {
+  if (!storedData) {
+    Serial.println("Log file not open!");
+    return;
+  }
+  for (int i = 0; i < logBufferCount; i++) {
+    storedData.println(logBuffer[i]);
+  }
+  storedData.flush();
+  if (debugMode == LOGGING) {
+    Serial.println("buffer flushed to SD");
+  }
+  logBufferCount = 0;
 }
 
 
