@@ -151,7 +151,10 @@ void readImu(float imuData[12]){
     imuData[3] = gx;
     imuData[4] = gy;
     imuData[5] = gz;
-    
+    imuData[6] = accel.acceleration.x;
+    imuData[7] = accel.acceleration.y;
+    imuData[8] = accel.acceleration.z;
+
     /*
     Serial.print("Orientation: ");
     Serial.print(heading);
