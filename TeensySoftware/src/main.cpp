@@ -72,6 +72,8 @@ bool initAltitude = false;
 float initPressure = 0.0;
 float pressure = 0.0;
 float altitude = 0.0;
+float altitudeMax = 0.0;
+float altitudePrev = 0.0;
 
 float pitchMeasured = 0.0, rollMeasured = 0.0; // orientation in deg
 float deltaRollMeasured = 0.0, deltaPitchMeasured = 0.0; // angular velocity in deg/s
@@ -94,6 +96,9 @@ unsigned long timePrev = 0;
 double servoPitchAnglePrev = 0.0, servoRollAnglePrev = 0.0;
 double pitchMeasuredPrev = 0.0, rollMeasuredPrev = 0.0;
 
+// Parachute //
+
+bool parachuteRelease = false;
 
 //////////
 // INIT //
@@ -156,16 +161,34 @@ void loop() {
   if (flightPhase == LAUNCHED || flightPhase == FLIGHT) {
     ctrl();
     updateServos();
+    Serial.print(F("altitude: ")); Serial.println(altitude);
   }
 
   if (flightPhase == PREEFLIGHT && altitude >= 0.3) {
     flightPhase = LAUNCHED;
-    Serial.println(flightPhase);
   }
 
   if (flightPhase == LAUNCHED && altitude >= 15.0) {
     flightPhase = FLIGHT;
-    Serial.println(flightPhase);
+  }
+
+  if (flightPhase == FLIGHT && altitude >= altitudeMax) {
+    altitudeMax = altitude;
+  } else if (flightPhase == FLIGHT && (altitude + 1.0) < altitudeMax) {
+    flightPhase = APOGEE;
+  }
+
+  if (flightPhase == APOGEE && (altitudeMax - altitude) > 5.0) {
+    parachuteRelease = true;
+    flightPhase = DESCENT;
+  }
+
+  if (flightPhase == DESCENT) {
+    double altitudeDerivative = (altitude - altitudePrev)/dt;
+    Serial.print(F("altitudeDerivative: ")); Serial.println(altitudeDerivative, 6);
+    if (abs(altitudeDerivative) < 0.001) {
+      flightPhase = GROUND;
+    }
   }
 
   if (timeCur - logTimePrev >= logInterval && logging) {
@@ -173,6 +196,8 @@ void loop() {
     logData();
   }
 
+  Serial.print(F("flightPhase: ")); Serial.println(flightPhase);
+  Serial.print(F("parachuteRelease: ")); Serial.println(parachuteRelease);
   debugPrint();
 }
 
@@ -329,9 +354,13 @@ void readSensors() {
   // updates the measurement variables to the latest imu reading from sensor.ccp
   pitchMeasuredPrev = pitchMeasured;
   rollMeasuredPrev = rollMeasured;
+  altitudePrev = altitude;
 
+  double altitudeGain = 1.0;
   pressure = barData[0];
-  altitude = relativeAltitude(pressure);
+  double altitudeMeasured = relativeAltitude(pressure);
+
+  altitude = altitudeMeasured * altitudeGain + (1-altitudeGain) * altitude; 
 
   pitchMeasured = imuData[1];
   rollMeasured = imuData[2];
