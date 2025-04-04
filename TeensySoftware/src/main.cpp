@@ -5,6 +5,7 @@
 #include <Adafruit_LIS3MDL.h>
 #include <Adafruit_Sensor_Calibration.h>
 #include "sensor.h"
+#include "SimulatorInterface.h"
 #include <FS.h>
 #include <SdFat.h>
 
@@ -36,9 +37,6 @@ enum FlightPhase {
   GROUND = 5,
 };
 
-FlightPhase flightPhase = PREEFLIGHT;
-
-
 enum DebugMode {
   OFF = 0,
   CTRL = 1,
@@ -46,7 +44,17 @@ enum DebugMode {
   LOGGING = 3,
 };
 
+enum ProgramMode {
+  LIVE = 0,
+  LAB = 1,
+  SIM = 2,
+};
+
+
+FlightPhase flightPhase = PREEFLIGHT;
+
 DebugMode debugMode = OFF;
+ProgramMode programMode = SIM;
 
 // GIMBAL PARAMS //
 const int gimbalLim = 7; // +- deg
@@ -100,13 +108,16 @@ double pitchMeasuredPrev = 0.0, rollMeasuredPrev = 0.0;
 
 bool parachuteRelease = false;
 
+// SIMULATOR PARAMS //
+float simRead[12];
+float simPub[2];
+
+
 //////////
 // INIT //
 //////////
 
 void setup() {
-  // begin serial communication at a baudrate of 115200Hz
-  Serial.begin(115200);
 
   if (logging) {
     while (!Serial) {}
@@ -127,19 +138,24 @@ void setup() {
       return;
     }
     if (storedData.fileSize() == 0) {
-      storedData.println("Time, dt, pitchMeasured, rollMeasured, pitchGimbal, rollGimbal, pitchSet, rollSet, pitchError, rollError"); // headers at the top csv
+      storedData.println("Time, dt, altitude, pitchMeasured, rollMeasured, pitchGimbal, rollGimbal, pitchSet, rollSet, pitchError, rollError"); // headers at the top csv
       storedData.flush();
     }
   }
 
-  // sets the pins for the pitch and roll servos
   pinMode(2, OUTPUT);
   pinMode(3, OUTPUT);
 
-  // init sensors and allow the sensors to run for the filter in sensor.cpp to calibrate
-  initSensors();
-  delay(2000);
-  calibrateSensors();
+  if (programMode == SIM) {
+    debugMode = OFF;
+    initSimulatorinterface();
+    delay(2000);
+  } else {
+    Serial.begin(115200);
+    initSensors();
+    delay(2000);
+    calibrateSensors();
+  }
 
   // init prev values
   timePrev = micros();
@@ -157,11 +173,10 @@ void loop() {
   // NB! averag dt = 0.006s, but when logData() is run the system slows to dt = 0.015s for that loop
   
   readSensors();
-
+  
   if (flightPhase == LAUNCHED || flightPhase == FLIGHT) {
     ctrl();
     updateServos();
-    Serial.print(F("altitude: ")); Serial.println(altitude);
   }
 
   if (flightPhase == PREEFLIGHT && altitude >= 0.3) {
@@ -184,8 +199,7 @@ void loop() {
   }
 
   if (flightPhase == DESCENT) {
-    double altitudeDerivative = (altitude - altitudePrev)/dt;
-    Serial.print(F("altitudeDerivative: ")); Serial.println(altitudeDerivative, 6);
+    double altitudeDerivative = (altitude - altitudePrev)/dt; // should use imu data
     if (abs(altitudeDerivative) < 0.001) {
       flightPhase = GROUND;
     }
@@ -196,8 +210,8 @@ void loop() {
     logData();
   }
 
-  Serial.print(F("flightPhase: ")); Serial.println(flightPhase);
-  Serial.print(F("parachuteRelease: ")); Serial.println(parachuteRelease);
+  //Serial.print(F("flightPhase: ")); Serial.println(flightPhase);
+  //Serial.print(F("parachuteRelease: ")); Serial.println(parachuteRelease);
   debugPrint();
 }
 
@@ -221,13 +235,6 @@ float relativeAltitude(float pressureMeasured) {
   
   return relAltitude;
 }
-
-
-double tanhErrorMapping(double error) { // UNUSED
-  double sensitivity = 5;
-  double mappedError = gimbalLim * tanh(error * 1/sensitivity);
-  return mappedError; // smoth mapping. fixes: errors over gimbalLim is hard-constrained and looses proportionality
-  }
 
 
 double requiredForceEstimator(double currentAngle, double currentVelocity, double desiredAngle) {
@@ -285,8 +292,8 @@ void logData() {
   double rollError = rollSet - rollMeasured;
 
   snprintf(logBuffer[logBufferCount], 128,
-           "%lu,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
-           millis(), dt, pitchMeasured, rollMeasured, gimbalPitchAngle,
+           "%lu,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
+           millis(), dt, altitude, pitchMeasured, rollMeasured, gimbalPitchAngle,
            gimbalRollAngle, pitchSet, rollSet, pitchError, rollError);
 
   logBufferCount++;
@@ -321,7 +328,7 @@ void calibrateSensors() {
   Serial.println("--- CALIBRATION STARTING ---");
   Serial.println(" ");
 
-  for (int i = 0; i < 1000; i++) {
+  for (int i = 0; i < 1500; i++) {
     readImu(imuData);
     readPressure(barData);
     readGps(gpsData);
@@ -346,27 +353,42 @@ void calibrateSensors() {
 
 
 void readSensors() {
-  // fetches the latest sensor data
-  readImu(imuData);
-  readPressure(barData);
-  readGps(gpsData);
-
   // updates the measurement variables to the latest imu reading from sensor.ccp
   pitchMeasuredPrev = pitchMeasured;
   rollMeasuredPrev = rollMeasured;
   altitudePrev = altitude;
+  
+  if (programMode == SIM) {
+    // fetches the latest sim data
+    readSimulator(imuData);
 
-  double altitudeGain = 1.0;
-  pressure = barData[0];
-  double altitudeMeasured = relativeAltitude(pressure);
+    pressure = 0;
+    altitude = relativeAltitude(pressure);
 
-  altitude = altitudeMeasured * altitudeGain + (1-altitudeGain) * altitude; 
+    pitchMeasured = 0;
+    rollMeasured = 0;
 
-  pitchMeasured = imuData[1];
-  rollMeasured = imuData[2];
+    deltaPitchMeasured = 0;
+    deltaRollMeasured = 0;
 
-  deltaPitchMeasured = -imuData[5];
-  deltaRollMeasured = imuData[3];
+  } else {
+    // fetches the latest sensor data
+    readImu(imuData);
+    readPressure(barData);
+    readGps(gpsData);
+  
+    double altitudeGain = 1.0;
+    pressure = barData[0];
+    double altitudeMeasured = relativeAltitude(pressure);
+
+    altitude = altitudeMeasured * altitudeGain + (1-altitudeGain) * altitude; 
+
+    pitchMeasured = imuData[1];
+    rollMeasured = imuData[2];
+
+    deltaPitchMeasured = -imuData[5];
+    deltaRollMeasured = imuData[3];
+  }
 }
 
 
@@ -465,20 +487,26 @@ void gimbalToServo() {
 
 
 void updateServos() {
-  gimbalToServo();
-  
-  // Translates the servo setpoints to PWM signals. Servos idle at 90deg
-  int pitchPulse = map(constrain(90 + servoPitchAngle, 0, 180), 0, 180, 500, 2500);
-  int rollPulse = map(constrain(90 + servoRollAngle, 0, 180), 0, 180, 500, 2500);
+  if (programMode == SIM) {
+    simPub[0] = gimbalPitchAngle;
+    simPub[1] = gimbalRollAngle;
+    publishSimulator(simPub);
+  } else {
+    gimbalToServo();
+    
+    // Translates the servo setpoints to PWM signals. Servos idle at 90deg
+    int pitchPulse = map(constrain(90 + servoPitchAngle, 0, 180), 0, 180, 500, 2500);
+    int rollPulse = map(constrain(90 + servoRollAngle, 0, 180), 0, 180, 500, 2500);
 
-  // mannualy sends the PWM signal to the servos 🤡🤡🤡
-  digitalWrite(2, HIGH);
-  delayMicroseconds(pitchPulse);
-  digitalWrite(2, LOW);
-  
-  digitalWrite(3, HIGH);
-  delayMicroseconds(rollPulse);
-  digitalWrite(3, LOW);
+    // mannualy sends the PWM signal to the servos 🤡🤡🤡
+    digitalWrite(2, HIGH);
+    delayMicroseconds(pitchPulse);
+    digitalWrite(2, LOW);
+    
+    digitalWrite(3, HIGH);
+    delayMicroseconds(rollPulse);
+    digitalWrite(3, LOW);
+  }
 }
 
 
