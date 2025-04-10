@@ -26,12 +26,11 @@ char logBuffer[LOG_BUFFER_SIZE][128];
 void logData();
 void flushLogBuffer();
 void readSensors();
-void ctrl();
-void updateServos();
 void calibrateSensors();
 void flightPhases();
 void initLog();
 void testPhases();
+void reciever(unsigned long interval);
 
 enum FlightPhase {
   PREEFLIGHT = 0,
@@ -63,12 +62,15 @@ ProgramMode programMode = LAB;
 
 // coms bool
 bool launchSignalReceived = false;
+bool armed = false;
+int armedSound = 200;
+unsigned long lastMessageTime = 0;
 
 // GIMBAL PARAMS  in deg//
 extern const int gimbalLim = 7; // +-
 
 double servoPitchAngle = 0.0;
-double gimbalPitchAngle = 0.0; // deg
+double gimbalPitchAngle = 0.0;
 double servoRollAngle = 0.0;
 double gimbalRollAngle = 0.0;
 double servoPitchSet = 0.0;
@@ -87,6 +89,7 @@ float altitudeMax = 0.0;
 float altitudePrev = 0.0;
 
 extern bool launchSignaled;
+extern bool armSignaled;
 
 // orientation in deg
 float pitchMeasured = 0.0;
@@ -119,7 +122,6 @@ float simRead[12];
 
 void setup() {
   initActuator();
-  armIgnition();
 
   if (logging) {
     initLog();
@@ -150,13 +152,24 @@ void loop() {
   dt = (timeCur - timePrev) * 1e-6; // dt in seconds
   timePrev = timeCur; // updates timePrev
   // NB! averag dt = 0.006s, but when logData() is run the system slows to dt = 0.015s for that loop
-  
+
   readSensors();
 
-  if (programMode == LAB) {
-    testPhases();
-  } else {
-    flightPhases();
+  if (true) {
+    if (programMode == LAB) {
+      testPhases();
+    } else {
+      flightPhases();
+    }
+  }
+
+  if (armed) {
+    buzzer(armedSound);
+    if (armedSound < 500) {
+      armedSound += 1;
+    } else {
+      armedSound = 200;
+    }
   }
 
   if ((timeCur - logTimePrev >= logInterval) && logging) {
@@ -244,7 +257,7 @@ void calibrateSensors() {
   
   Serial.println(" "); Serial.println("--- CALIBRATION STARTING ---"); Serial.println(" ");
   for (int i = 0; i < 1500; i++) {
-    buzzer();
+    buzzer(100);
     readImu(imuData);
     readPressure(barData);
     readGps(gpsData);
@@ -255,12 +268,10 @@ void calibrateSensors() {
   } Serial.println("--- CALIBRATION FINISHED ---"); Serial.println(" ");
 
   pressure = barData[0];
-  altitude = relativeAltitude(pressure);
+
+  altitude = calculateAltitude(pressure, imuData);
   
   //pitchSet = pitchMeasured, rollSet = rollMeasured;
-
-  ctrl();
-  updateServos();
 }
 
 
@@ -275,7 +286,7 @@ void readSensors() {
     readSimulator(simRead);
 
     pressure = simRead[5];
-    altitude = relativeAltitude(pressure);
+    //altitude = relativeAltitude(pressure);
 
     pitchMeasured = simRead[1];
     rollMeasured = simRead[2];
@@ -290,7 +301,7 @@ void readSensors() {
     readGps(gpsData);
   
     pressure = barData[0];
-    altitude = relativeAltitude(pressure);
+    //altitude = relativeAltitude(pressure);
 
     pitchMeasured = imuData[1];
     rollMeasured = imuData[2];
@@ -311,18 +322,31 @@ void flightPhases() {
 
   if (flightPhase == LAUNCHED || flightPhase == FLIGHT) {
     // rocket is ascending
-    ctrl();
+    ctrl(0.5, 0.35, 0.0, 0.3, 0.0);
     updateServos();
   }
 
   if (flightPhase == PREEFLIGHT) {
     // rocket has not yet launched
-    ctrl();
-    updateServos();
+    if (armed) { // ensures correct angle at lauch
+      ctrl(0.5, 0.0, 0.0, 0.0, 0.0);
+      updateServos();  
+    }
 
-  } else if (flightPhase == PREEFLIGHT && altitude >= 0.3) {
+    reciever(100); // reading LoRa at 10 Hz
+
+    if (launchSignaled && armed) {
+      ignite();
+      flightPhase = LAUNCHED;
+    } else if (armSignaled && !armed) {
+      armIgnition();
+      armed = true;
+    }
+
+  } else if (flightPhase == PREEFLIGHT && altitude >= 0.2 && launchSignaled) {
     // rocket has just launched
     flightPhase = LAUNCHED;
+    resetIgnition();
 
   } else if (flightPhase == LAUNCHED && altitude >= 1.0) {
     // rocket is in stable flight
@@ -363,20 +387,26 @@ void flightPhases() {
 void testPhases() {
 
   if (flightPhase == PREEFLIGHT) {
-    receiveLoRaMessage();
-    if (launchSignaled) {
+    reciever(100);
+    if (launchSignaled && armed) {
       ignite();
       flightPhase = LAUNCHED;
+    } else if (armSignaled && !armed) {
+      armIgnition();
+      armed = true;
     }
   } else if (flightPhase == LAUNCHED || flightPhase == FLIGHT) {
     // flight phase bypass
-    ctrl();
+    ctrl(0.5, 0.35, 0.3, 0.3, 0.0);
     updateServos();
-    if (debugMode == CTRL) {
-      Serial.print(F("Pitch gimbal: ")); Serial.print(gimbalPitchAngle);
-      Serial.print(F("\tPitch servo: ")); Serial.println(servoPitchAngle);
-      Serial.print(F("Roll gimbal: ")); Serial.print(gimbalRollAngle);
-      Serial.print(F("\tRoll servo: ")); Serial.println(servoRollAngle);
-    }
+  }
+}
+
+
+void reciever(unsigned long interval) {
+  unsigned long now = millis();
+  if (now - lastMessageTime >= interval) {
+    lastMessageTime = now;
+    receiveLoRaMessage();
   }
 }

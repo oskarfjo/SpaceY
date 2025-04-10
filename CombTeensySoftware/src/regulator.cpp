@@ -45,7 +45,7 @@ double requiredForceEstimator(double currentAngle, double currentVelocity, doubl
     // theta[n+1] = setpoint //
     double tauRequired = inertia * angularAccel * dt/calcTime;
     double tauThrust = thrust * thrustMomentArm;
-    double tauDrag = 0.0; // drag is rounded to 0 because it is at most 0.05*thrust
+    double tauDrag = 0.0; // i rounded drag to 0 because it is at most 0.05*thrust
     double ratio = constrain(tauRequired / (tauThrust + tauDrag), -1, 1); // asin gives nan for val outside [-1, 1]
     double requiredGimbalAngle = asin(ratio) * 180/PI;
 
@@ -68,15 +68,18 @@ double requiredForceEstimator(double currentAngle, double currentVelocity, doubl
 }
 
 
-void ctrl() {
+void ctrl(double kp, double ki, double kd, double dGain, double reqGain) {
   
     // constants //
+    /*
+    ctrl(0.5, 0.35, 0.3, 0.3, 0.0);
     double kp = 2;//0.5;
     double kd = 0; //0.35;
     double ki = 0;//0.3;
     double dGain = 0.3;
     double reqGain = 0.0;
-  
+    */
+
     // P //
     double pitchError = pitchSet - pitchMeasured;
     double rollError = rollSet - rollMeasured;

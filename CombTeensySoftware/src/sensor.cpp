@@ -11,11 +11,14 @@
 #include <SPI.h>
 #include <RH_RF95.h>
 
+#include "actuator.h"
+
 #define GPS_SERIAL Serial8
 #define GPS_BAUD 9600
 
-#define RFM95_CS    10 // CS PIN
-#define RFM95_RST   9  // RST PIN
+#define RFM95_RST   9 // RST PIN
+#define RFM95_CS    8 // CS PIN
+#define RFM95_INT   7 // INT PIN
 #define RFM95_FREQ  868.0 // LoRa Frequency
 
 #define GPS_PPS 33
@@ -36,13 +39,15 @@ Adafruit_Madgwick filter;
 Adafruit_DPS310 bar = Adafruit_DPS310();
 
 Adafruit_GPS GPS(&GPS_SERIAL);
-RH_RF95 rf95(RFM95_CS);
+RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
 bool calInit = false;
 
 // Expected launch command
 const char* launchCmd = "LAUNCH";
-extern bool launchSignaled = false;
+const char* armCmd = "ARM";
+bool launchSignaled = false;
+bool armSignaled = false;
 
 void initSensors(){
     Wire.begin();
@@ -102,9 +107,13 @@ void initSensors(){
         Serial.println("Failed to initilize LoRa!");
         return;
     }
-    rf95.setFrequency(RFM95_FREQ);
-    rf95.setTxPower(23, false);
-    rf95.setModemConfig(RH_RF95::Bw125Cr45Sf128);
+
+    if (!rf95.setFrequency(RFM95_FREQ)) {
+        Serial.println("Frequency set failed");
+        return;
+    }
+    rf95.setTxPower(23); // , false);
+    rf95.setModemConfig(RH_RF95::Bw500Cr45Sf128);
     Serial.println("Lora initialized!");
 
 }
@@ -213,11 +222,14 @@ void sendLoRaMessage(String message) {
     Serial.print("Sending: "); Serial.println(message);
     rf95.send((uint8_t*)message.c_str(), message.length());
     rf95.waitPacketSent();
-    Serial.println("Message sent!");
+    buzzer(100);
+    Serial.println("Message sent!");  
 }
 
 void receiveLoRaMessage() {
     if (rf95.available()) {
+        Serial.println("available message");
+
         uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
         uint8_t len = sizeof(buf);
 
@@ -226,9 +238,14 @@ void receiveLoRaMessage() {
             buf[len] = 0;
             
             // Check if it's the launch command
-            if (strcmp((char*)buf, launchCmd) == 0) {
+            if (strcmp((char*)buf, launchCmd) == 0 && !launchSignaled) {
                 Serial.println("LAUNCH COMMAND RECEIVED!");
                 launchSignaled = true;
+                Serial.println("launch");
+            } else if (strcmp((char*)buf, armCmd) == 0 && !armSignaled) {
+                Serial.println("ARM COMMAND RECEIVED!");
+                armSignaled = true;
+                Serial.println("arm");
             }
             
             // Debug output
@@ -236,6 +253,7 @@ void receiveLoRaMessage() {
             Serial.println((char*)buf);
             Serial.print("RSSI: ");
             Serial.println(rf95.lastRssi(), DEC);
+        } else {
         }
     }
 }

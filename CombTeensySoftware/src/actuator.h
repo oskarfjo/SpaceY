@@ -8,7 +8,7 @@ void deployParachute(bool release);
 void armIgnition();
 void ignite();
 void resetIgnition();
-void buzzer();
+void buzzer(int freq);
 void updateServos();
 
 #endif

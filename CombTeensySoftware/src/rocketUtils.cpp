@@ -6,24 +6,14 @@ extern bool initAltitude;
 extern float initPressure;
 extern float altitude;
 
-extern const int gimbalLim;
-extern double servoPitchAngle;
-extern double gimbalPitchAngle;
-extern double servoRollAngle;
-extern double gimbalRollAngle;
-extern double servoPitchAnglePrev;
-extern double servoRollAnglePrev;
-extern double dt;
-
-/*
 float fusedAltitude = 0;
 float lastFusedAltitude = 0;
 float verticalVelocity = 0;
 unsigned long lastAltitudeTime = 0;
-*/
+
 
 float relativeAltitude(float pressureMeasured) {
-    if (!initAltitude || initPressure == 0.0) { // sets the starting pressure after the calibration run
+    if (!initAltitude || initPressure == 0.0) { // sets the starting pressure
       initPressure = pressureMeasured * 100; // converts bar to hPa
       initAltitude = true;
       return 0.0;
@@ -36,11 +26,13 @@ float relativeAltitude(float pressureMeasured) {
   }
 
 
-/*
-void calculateAltitude(float barData[3], float gpsData[10], float imuData[12], float *alt, float *vertSpeed) {
+double calculateAltitude(float pressureMeasured, float imuData[12]) {
     
+    unsigned long now = millis();
+    unsigned long dt = now - lastAltitudeTime;
+
     // Get barometric altitude
-    float baroAlt = altitude;
+    float baroAlt = relativeAltitude(pressureMeasured);
 
     // Get vertical acceleration (in the world frame)
     // We need to transform the acceleration from sensor frame to world frame using the orientation
@@ -55,7 +47,7 @@ void calculateAltitude(float barData[3], float gpsData[10], float imuData[12], f
                           imuData[7] * sinPitch;
     
     // Remove gravity
-    verticalAccel -= 9.81; // Subtract gravity to get actual acceleration
+    //verticalAccel -= 9.81;
     
     // Integrate acceleration to get velocity change
     float velocityChange = verticalAccel * dt;
@@ -66,16 +58,15 @@ void calculateAltitude(float barData[3], float gpsData[10], float imuData[12], f
     
     // Complementary filter
     // Higher alpha = more trust in barometer/GPS, lower alpha = more trust in IMU
-    float alpha = 0.02; // Adjust based on testing
+    float alpha = 0.1; // Adjust based on testing
     
 
     fusedAltitude = alpha * baroAlt + (1 - alpha) * (lastFusedAltitude + positionChange);
     
     // Update values for next iteration
     lastFusedAltitude = fusedAltitude;
+
+    unsigned long lastAltitudeTime = now;
     
-    // Set output values
-    *alt = fusedAltitude;
-    *vertSpeed = verticalVelocity;
+    return fusedAltitude;
 }
-*/

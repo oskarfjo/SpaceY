@@ -3,7 +3,6 @@
 #include <wiring.h>
 #include "SimulatorInterface.h"
 
-
 extern float simRead[12];
 float simPub[2];
 
@@ -64,7 +63,7 @@ void armIgnition(){
 }
 
 // Funksjon for å antenne rakett motorer
-void ignite(){
+void ignite(){ 
     digitalWrite(24, HIGH);
     digitalWrite(25, HIGH);
     digitalWrite(26, HIGH);
@@ -81,9 +80,9 @@ void resetIgnition(){
 }
 
 // Funksjon for å lage buzzer lyder
-void buzzer(){
+void buzzer(int freq){
     digitalWrite(29, HIGH);
-    delayMicroseconds(100);
+    delayMicroseconds(freq);
     digitalWrite(29, LOW);
 }
 
@@ -114,14 +113,14 @@ void gimbalToServo() {
 
 void updateServos() {
     if (false) {
-      simPub[0] = 7; //gimbalPitchAngle;
-      simPub[1] = 7; //gimbalRollAngle;
+      simPub[0] = gimbalPitchAngle;
+      simPub[1] = gimbalRollAngle;
       publishSimulator(simPub, simRead);
     } else {
       gimbalToServo();
       
       // Translates the servo setpoints to PWM signals. Servos idle at 90deg
-      int pitchPulse = map(constrain(90 + servoPitchAngle, 0, 180), 0, 180, 500, 2500);
+      int pitchPulse = map(constrain(90 - servoPitchAngle, 0, 180), 0, 180, 500, 2500);
       int rollPulse = map(constrain(90 + servoRollAngle, 0, 180), 0, 180, 500, 2500);
   
       // mannualy sends the PWM signal to the servos
