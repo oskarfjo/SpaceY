@@ -1,27 +1,13 @@
 #include "regulator.h"
+#include "flightData.h"
 #include <Arduino.h>
 #include <wiring.h>
 
 extern const int gimbalLim;
 
-extern double pitchSet;
-extern double rollSet;
-extern float pitchMeasured;
-extern float rollMeasured;
-extern float deltaPitchMeasured;
-extern float deltaRollMeasured;
-extern double gimbalPitchAngle;
-extern double gimbalRollAngle;
-extern double dt;
-
 const double MAX_P_CONTRIBUTION = gimbalLim;
 const double MAX_I_CONTRIBUTION = 0.5*gimbalLim;
 const double MAX_D_CONTRIBUTION = 0.8*gimbalLim;
-
-double filteredPitchDotError = 0.0;
-double filteredRollDotError = 0.0;
-double pitchErrorInt = 0.0;
-double rollErrorInt = 0.0;
 
 double requiredForceEstimator(double currentAngle, double currentVelocity, double desiredAngle) {
     // Simplified physical model for andreas' required-force-estimation (pat pending) //
@@ -43,7 +29,7 @@ double requiredForceEstimator(double currentAngle, double currentVelocity, doubl
     // F_tot = T*l_T*sin(alpha) + F_D*l_D*sin(theta) //
     // theta[n+1] = F_tot * ((dt^2)/I) + 2*theta[n] - theta[n-1] //
     // theta[n+1] = setpoint //
-    double tauRequired = inertia * angularAccel * dt/calcTime;
+    double tauRequired = inertia * angularAccel * ctrlData.dt/calcTime;
     double tauThrust = thrust * thrustMomentArm;
     double tauDrag = 0.0; // i rounded drag to 0 because it is at most 0.05*thrust
     double ratio = constrain(tauRequired / (tauThrust + tauDrag), -1, 1); // asin gives nan for val outside [-1, 1]
@@ -56,7 +42,7 @@ double requiredForceEstimator(double currentAngle, double currentVelocity, doubl
         Serial.print(F("currentAngle: ")); Serial.println(currentAngle);
         Serial.print(F("desiredAngle: ")); Serial.println(desiredAngle);
         Serial.print(F("currentVelocity: ")); Serial.println(currentVelocity);
-        Serial.print(F("dt: ")); Serial.println(dt, 5);
+        Serial.print(F("dt: ")); Serial.println(ctrlData.dt, 5);
         Serial.print(F("angularAccel: ")); Serial.println(angularAccel);
         Serial.print(F("tauRequired: ")); Serial.println(tauRequired);
         Serial.print(F("Ratio (unconstrained): ")); Serial.println(tauRequired/tauThrust);
@@ -81,41 +67,44 @@ void ctrl(double kp, double ki, double kd, double dGain, double reqGain) {
     */
 
     // P //
-    double pitchError = pitchSet - pitchMeasured;
-    double rollError = rollSet - rollMeasured;
-  
+    double pitchError = ctrlData.pitchSet - sensorData.pitch;
+    double rollError = ctrlData.rollSet - sensorData.roll;
+
+    ctrlData.pitchError = pitchError;
+    ctrlData.rollError = rollError;
+
     // D //
-    double pitchDotError = -deltaPitchMeasured;
-    double rollDotError = -deltaRollMeasured;
+    double pitchDotError = -sensorData.gyroZ;
+    double rollDotError = -sensorData.gyroX;
   
     // D filter (lowpass)
-    filteredPitchDotError = dGain * pitchDotError + (1-dGain) * filteredPitchDotError;
-    filteredPitchDotError = constrain(filteredPitchDotError, -gimbalLim/kd, gimbalLim/kd);
-    filteredRollDotError = dGain * rollDotError + (1-dGain) * filteredRollDotError;
-    filteredRollDotError = constrain(filteredRollDotError, -gimbalLim/kd, gimbalLim/kd);
+    ctrlData.filteredPitchDotError = dGain * pitchDotError + (1-dGain) * ctrlData.filteredPitchDotError;
+    ctrlData.filteredPitchDotError = constrain(ctrlData.filteredPitchDotError, -gimbalLim/kd, gimbalLim/kd);
+    ctrlData.filteredRollDotError = dGain * rollDotError + (1-dGain) * ctrlData.filteredRollDotError;
+    ctrlData.filteredRollDotError = constrain(ctrlData.filteredRollDotError, -gimbalLim/kd, gimbalLim/kd);
   
     // I - with windup //
-    if (!(gimbalPitchAngle >= gimbalLim && pitchError > 0) && !(gimbalPitchAngle <= -gimbalLim && pitchError < 0)) {
-    pitchErrorInt += dt * constrain(pitchError, -gimbalLim, gimbalLim); // integrates error, constrained to prevent large jumps
-    pitchErrorInt = constrain(pitchErrorInt, -0.8*gimbalLim/ki, 0.8*gimbalLim/ki); // constrains the resulting value to 80% of gimbal limit
+    if (!(ctrlData.gimbalPitchAngle >= gimbalLim && pitchError > 0) && !(ctrlData.gimbalPitchAngle <= -gimbalLim && pitchError < 0)) {
+      ctrlData.pitchErrorInt += ctrlData.dt * constrain(pitchError, -gimbalLim, gimbalLim); // integrates error, constrained to prevent large jumps
+      ctrlData.pitchErrorInt = constrain(ctrlData.pitchErrorInt, -0.8*gimbalLim/ki, 0.8*gimbalLim/ki); // constrains the resulting value to 80% of gimbal limit
     }
-    if (!(gimbalRollAngle >= gimbalLim && rollError > 0) && !(gimbalRollAngle <= -gimbalLim && rollError < 0)) {
-    rollErrorInt += dt * constrain(rollError, -gimbalLim, gimbalLim);
-    rollErrorInt = constrain(rollErrorInt, -0.8*gimbalLim/ki, 0.8*gimbalLim/ki);
+    if (!(ctrlData.gimbalRollAngle >= gimbalLim && rollError > 0) && !(ctrlData.gimbalRollAngle <= -gimbalLim && rollError < 0)) {
+      ctrlData.rollErrorInt += ctrlData.dt * constrain(rollError, -gimbalLim, gimbalLim);
+      ctrlData.rollErrorInt = constrain(ctrlData.rollErrorInt, -0.8*gimbalLim/ki, 0.8*gimbalLim/ki);
     }
     // integral decays close to setpoint
-    if (abs(pitchError) < 0.01) pitchErrorInt *= 0.999;
-    if (abs(rollError) < 0.01) rollErrorInt *= 0.999;
+    if (abs(pitchError) < 0.01) ctrlData.pitchErrorInt *= 0.999;
+    if (abs(rollError) < 0.01) ctrlData.rollErrorInt *= 0.999;
   
     double pP = constrain(pitchError*kp, -MAX_P_CONTRIBUTION, MAX_P_CONTRIBUTION), rP = constrain(rollError*kp, -MAX_P_CONTRIBUTION, MAX_P_CONTRIBUTION);
-    double pI = constrain(pitchErrorInt*ki, -MAX_I_CONTRIBUTION, MAX_I_CONTRIBUTION), rI = constrain(rollErrorInt*ki, -MAX_I_CONTRIBUTION, MAX_I_CONTRIBUTION);
-    double pD = constrain(filteredPitchDotError*kd, -MAX_D_CONTRIBUTION, MAX_D_CONTRIBUTION), rD = constrain(filteredRollDotError*kd, -MAX_D_CONTRIBUTION, MAX_D_CONTRIBUTION);
+    double pI = constrain(ctrlData.pitchErrorInt*ki, -MAX_I_CONTRIBUTION, MAX_I_CONTRIBUTION), rI = constrain(ctrlData.rollErrorInt*ki, -MAX_I_CONTRIBUTION, MAX_I_CONTRIBUTION);
+    double pD = constrain(ctrlData.filteredPitchDotError*kd, -MAX_D_CONTRIBUTION, MAX_D_CONTRIBUTION), rD = constrain(ctrlData.filteredRollDotError*kd, -MAX_D_CONTRIBUTION, MAX_D_CONTRIBUTION);
   
     if (abs(pD) < 0.1) pD = 0.0;
     if (abs(rD) < 0.1) rD = 0.0;
     
-    double uPitchEstimate = requiredForceEstimator(pitchMeasured, deltaPitchMeasured, pitchSet);
-    double uRollEstimate = requiredForceEstimator(rollMeasured, deltaRollMeasured, rollSet);
+    double uPitchEstimate = requiredForceEstimator(sensorData.pitch, sensorData.gyroZ, ctrlData.pitchSet);
+    double uRollEstimate = requiredForceEstimator(sensorData.roll, sensorData.gyroX, ctrlData.rollSet);
     
     // PID
     double uPitch = pP + pI + pD;
@@ -126,12 +115,12 @@ void ctrl(double kp, double ki, double kd, double dGain, double reqGain) {
     double rCTRL = uRollEstimate*reqGain + (1-reqGain)*uRoll;
   
     // constrains the desired control to the gimbal limit
-    gimbalPitchAngle = constrain(pCTRL, -gimbalLim, gimbalLim);
-    gimbalRollAngle = constrain(rCTRL, -gimbalLim, gimbalLim);
+    ctrlData.gimbalPitchAngle = constrain(pCTRL, -gimbalLim, gimbalLim);
+    ctrlData.gimbalRollAngle = constrain(rCTRL, -gimbalLim, gimbalLim);
     
     if (false) {
       Serial.print("Pitch: ");
-      Serial.print(F("pitch IMU: ")); Serial.println(pitchMeasured);
+      Serial.print(F("pitch IMU: ")); Serial.println(sensorData.pitch);
       Serial.print(F("pitch error: ")); Serial.println(pitchError);
       Serial.print(F("\tpP: ")); Serial.print(pP);
       Serial.print(F("\tpI: ")); Serial.print(pI);
@@ -141,7 +130,7 @@ void ctrl(double kp, double ki, double kd, double dGain, double reqGain) {
       Serial.print(F("\tpEstimate: ")); Serial.println(uPitchEstimate, 4);
       Serial.println(" ");
       Serial.print("Roll: ");
-      Serial.print(F("roll IMU: ")); Serial.println(rollMeasured);
+      Serial.print(F("roll IMU: ")); Serial.println(sensorData.roll);
       Serial.print(F("pitch error: ")); Serial.println(pitchError);
       Serial.print(F("\trP: ")); Serial.print(rP);
       Serial.print(F("\trI: ")); Serial.print(rI);

@@ -1,15 +1,11 @@
-#include "actuator.h"
 #include <Arduino.h>
 #include <wiring.h>
+#include "actuator.h"
 #include "SimulatorInterface.h"
+#include "flightData.h"
 
 extern float simRead[12];
 float simPub[2];
-
-extern double gimbalPitchAngle;
-extern double gimbalRollAngle;
-extern double servoPitchAngle;
-extern double servoRollAngle;
 
 double servoPitchAnglePrev = 0.0;
 double servoRollAnglePrev = 0.0;
@@ -86,39 +82,34 @@ void buzzer(int freq){
     digitalWrite(29, LOW);
 }
 
-void gimbalToServo() {
-    
-    // servo specs
-    const double maxServoChange = 0.3 * 1/(0.04/60); // 0.04 s for 60 deg : 1500*0.3 = maxDeg pr. s
-    
-    // gear geometry in mm
-    const double servoPitchRad = 7.7;
-    const double gimbalPitchRad = 63.0;
-    const double servoRollRad = 7.7;
-    const double gimbalRollRad = 63.0;
-
-    double maxChange = maxServoChange * 0.006;
-
-    // calculates servo setpoints from desired gimbal angle using physical geometry
-    servoPitchAngle = - gimbalPitchAngle * gimbalPitchRad / servoPitchRad;
-    servoRollAngle = - gimbalRollAngle * gimbalRollRad / servoRollRad;
-
-    servoPitchAngle = constrain(servoPitchAngle, servoPitchAnglePrev - maxChange, servoPitchAnglePrev + maxChange);
-    servoRollAngle = constrain(servoRollAngle, servoRollAnglePrev - maxChange, servoRollAnglePrev + maxChange);
-
-    servoPitchAnglePrev = servoPitchAngle;
-    servoRollAnglePrev = servoRollAngle;
-}
-
 
 void updateServos() {
     if (false) {
-      simPub[0] = gimbalPitchAngle;
-      simPub[1] = gimbalRollAngle;
+      simPub[0] = ctrlData.gimbalPitchAngle;
+      simPub[1] = ctrlData.gimbalRollAngle;
       publishSimulator(simPub, simRead);
     } else {
-      gimbalToServo();
-      
+      // servo specs
+      const double maxServoChange = 0.3 * 1/(0.04/60); // 0.04 s for 60 deg : 1500*0.3 = maxDeg pr. s
+
+      // gear geometry in mm
+      const double servoPitchRad = 7.7;
+      const double gimbalPitchRad = 63.0;
+      const double servoRollRad = 7.7;
+      const double gimbalRollRad = 63.0;
+
+      double maxChange = maxServoChange * 0.006;
+
+      // calculates servo setpoints from desired gimbal angle using physical geometry
+      double servoPitchAngle = - ctrlData.gimbalPitchAngle * gimbalPitchRad / servoPitchRad;
+      double servoRollAngle = - ctrlData.gimbalRollAngle * gimbalRollRad / servoRollRad;
+
+      servoPitchAngle = constrain(servoPitchAngle, servoPitchAnglePrev - maxChange, servoPitchAnglePrev + maxChange);
+      servoRollAngle = constrain(servoRollAngle, servoRollAnglePrev - maxChange, servoRollAnglePrev + maxChange);
+
+      servoPitchAnglePrev = servoPitchAngle;
+      servoRollAnglePrev = servoRollAngle;
+
       // Translates the servo setpoints to PWM signals. Servos idle at 90deg
       int pitchPulse = map(constrain(90 - servoPitchAngle, 0, 180), 0, 180, 500, 2500);
       int rollPulse = map(constrain(90 + servoRollAngle, 0, 180), 0, 180, 500, 2500);

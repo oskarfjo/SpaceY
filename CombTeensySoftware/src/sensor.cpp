@@ -1,4 +1,6 @@
 #include "sensor.h"
+#include "flightData.h"
+#include "actuator.h"
 #include <Arduino.h>
 #include <Adafruit_ISM330DHCX.h>
 #include <Adafruit_LIS3MDL.h>
@@ -10,8 +12,6 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <RH_RF95.h>
-
-#include "actuator.h"
 
 #define GPS_SERIAL Serial8
 #define GPS_BAUD 9600
@@ -46,8 +46,6 @@ bool calInit = false;
 // Expected launch command
 const char* launchCmd = "LAUNCH";
 const char* armCmd = "ARM";
-bool launchSignaled = false;
-bool armSignaled = false;
 
 void initSensors(){
     Wire.begin();
@@ -118,7 +116,7 @@ void initSensors(){
 
 }
 
-void readImu(float imuData[12]){
+void readImu(){
     sensors_event_t accel, gyro, mag_data, temp;
 
     // reads imu
@@ -147,7 +145,7 @@ void readImu(float imuData[12]){
     float roll = filter.getRoll();
     float pitch = filter.getPitch();
     float heading = filter.getYaw();
-
+/* 
     imuData[0] = heading;
     imuData[1] = pitch;
     imuData[2] = roll;
@@ -157,38 +155,25 @@ void readImu(float imuData[12]){
     imuData[6] = accel.acceleration.x;
     imuData[7] = accel.acceleration.y;
     imuData[8] = accel.acceleration.z;
-
-    /*
-    Serial.print("Orientation: ");
-    Serial.print(heading);
-    Serial.print(", ");
-    Serial.print(pitch);
-    Serial.print(", ");
-    Serial.println(roll);
-    */
-    
-    // Print the quaternion for advanced use
-    //float qw, qx, qy, qz;
-    /*filter.getQuaternion(&qw, &qx, &qy, &qz);
-    Serial.print("Quaternion: ");
-    Serial.print(qw, 4);
-    Serial.print(", ");
-    Serial.print(qx, 4);
-    Serial.print(", ");
-    Serial.print(qy, 4);
-    Serial.print(", ");
-    Serial.println(qz, 4);
-    */
-   
+ */
+    sensorData.heading = heading;
+    sensorData.pitch = pitch;
+    sensorData.roll = roll;
+    sensorData.gyroX = gx;
+    sensorData.gyroY = gy;
+    sensorData.gyroZ = -gz;
+    sensorData.accelX = accel.acceleration.x;
+    sensorData.accelY = accel.acceleration.y;
+    sensorData.accelZ = accel.acceleration.z;
 }
 
-void readPressure(float barData[3]){
+void readPressure(){
     sensors_event_t temp_event, pressure_event;
 
     bar.getEvents(&temp_event, &pressure_event);
 
-    barData[0] = pressure_event.pressure;
-    barData[1] = temp_event.temperature;
+    sensorData.pressure = pressure_event.pressure;
+    //barData[1] = temp_event.temperature;
     //barData[2] = bar.readAltitude();
 }
 
@@ -238,22 +223,24 @@ void receiveLoRaMessage() {
             buf[len] = 0;
             
             // Check if it's the launch command
-            if (strcmp((char*)buf, launchCmd) == 0 && !launchSignaled) {
+            if (strcmp((char*)buf, launchCmd) == 0 && !systemFlag.launchSignaled) {
                 Serial.println("LAUNCH COMMAND RECEIVED!");
-                launchSignaled = true;
+                systemFlag.launchSignaled = true;
                 Serial.println("launch");
-            } else if (strcmp((char*)buf, armCmd) == 0 && !armSignaled) {
+            } else if (strcmp((char*)buf, armCmd) == 0 && !systemFlag.armSignaled) {
                 Serial.println("ARM COMMAND RECEIVED!");
-                armSignaled = true;
+                systemFlag.armSignaled = true;
                 Serial.println("arm");
             }
             
-            // Debug output
-            Serial.print("Received: ");
-            Serial.println((char*)buf);
-            Serial.print("RSSI: ");
-            Serial.println(rf95.lastRssi(), DEC);
+            if (true) {
+                Serial.print("Received: ");
+                Serial.println((char*)buf);
+                Serial.print("RSSI: ");
+                Serial.println(rf95.lastRssi(), DEC);
+            }
         } else {
+            Serial.print("Message didnt fit");
         }
     }
 }

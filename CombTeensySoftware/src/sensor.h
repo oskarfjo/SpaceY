@@ -4,8 +4,8 @@
 #include <Arduino.h>
 
 void initSensors();
-void readImu(float imuData[12]);
-void readPressure(float barData[3]);
+void readImu();
+void readPressure();
 void readGps(float gpsData[10]);
 void sendLoRaMessage(String message);
 void receiveLoRaMessage();
