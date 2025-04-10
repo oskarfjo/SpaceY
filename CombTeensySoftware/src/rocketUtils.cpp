@@ -28,7 +28,7 @@ float relativeAltitude(float pressureMeasured) {
 double calculateAltitude() {
     
     unsigned long now = millis();
-    unsigned long dt = now - lastAltitudeTime;
+    unsigned long dt = (now - lastAltitudeTime)/1000; // dt converted to seconds
     lastAltitudeTime = now;
 
     // Get barometric altitude
@@ -47,7 +47,7 @@ double calculateAltitude() {
                           sensorData.accelY * sinPitch;
     
     // Remove gravity
-    //verticalAccel -= 9.81;
+    verticalAccel -= 9.81;
     
     // Integrate acceleration to get velocity change
     float velocityChange = verticalAccel * dt;
@@ -58,7 +58,7 @@ double calculateAltitude() {
     
     // Complementary filter
     // Higher alpha = more trust in barometer/GPS, lower alpha = more trust in IMU
-    float alpha = 0.1; // Adjust based on testing
+    float alpha = 0.3; // Adjust based on testing
 
     fusedAltitude = alpha * baroAlt + (1 - alpha) * (lastFusedAltitude + positionChange);
     

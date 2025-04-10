@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <Adafruit_AHRS.h>
 
-Adafruit_Madgwick sim_filter; // kan byttast til MadGwick
+Adafruit_Madgwick sim_filter;
 
 void initSimulatorinterface(){
     Serial.begin(115200);

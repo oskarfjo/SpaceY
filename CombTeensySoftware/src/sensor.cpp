@@ -34,7 +34,6 @@
 // Sensor objekt
 Adafruit_ISM330DHCX imu;
 Adafruit_LIS3MDL mag;
-Adafruit_Mahony ilter; // kan byttast til MadGwick
 Adafruit_Madgwick filter;
 Adafruit_DPS310 bar = Adafruit_DPS310();
 

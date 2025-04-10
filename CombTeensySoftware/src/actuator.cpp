@@ -90,7 +90,7 @@ void updateServos() {
       publishSimulator(simPub, simRead);
     } else {
       // servo specs
-      const double maxServoChange = 0.3 * 1/(0.04/60); // 0.04 s for 60 deg : 1500*0.3 = maxDeg pr. s
+      const double maxServoChange = 0.3 * (60/0.04); // 0.04 s for 60 deg : 1500*0.3 = maxDeg pr. s
 
       // gear geometry in mm
       const double servoPitchRad = 7.7;

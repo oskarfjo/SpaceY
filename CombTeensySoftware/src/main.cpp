@@ -159,7 +159,7 @@ void readSensors() {
     readSimulator(simRead);
 
     sensorData.pressure = simRead[5];
-    sensorData.altitude = calculateAltitude();
+    sensorData.altitude = relativeAltitude(simRead[5]);
 
     sensorData.pitch = simRead[1];
     sensorData.roll = simRead[2];
@@ -199,21 +199,20 @@ void flightPhases() {
       ctrl(0.5, 0.0, 0.0, 0.0, 0.0);
       updateServos();  
     }
-
+    
     reciever(100); // reading LoRa at 10 Hz
-
+    
     if (systemFlag.launchSignaled && systemFlag.armed) {
+      
       ignite();
+      delay(100);
+      resetIgnition();
+
       flightPhase = LAUNCHED;
     } else if (systemFlag.armSignaled && !systemFlag.armed) {
       armIgnition();
       systemFlag.armed = true;
     }
-
-  } else if (flightPhase == PREEFLIGHT && sensorData.altitude >= 0.2 && systemFlag.launchSignaled) {
-    // rocket has just launched
-    flightPhase = LAUNCHED;
-    resetIgnition();
 
   } else if (flightPhase == LAUNCHED && sensorData.altitude >= 10.0) {
     // rocket is in stable flight
