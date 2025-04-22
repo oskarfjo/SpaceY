@@ -5,7 +5,7 @@
 #include "flightData.h"
 
 extern float simRead[12];
-float simPub[2];
+float simPub[4];
 
 double servoPitchAnglePrev = 0.0;
 double servoRollAnglePrev = 0.0;
@@ -35,6 +35,10 @@ void initActuator(){
 
 // Funksjon for fallskjermsystem
 void deployParachute(bool release){
+if (false) {
+  simPub[3] = 1;
+  publishSimulator(simPub, simRead);
+  } else {
     double parachuteLockAngle = 90; // deg
     double parachuteOpenAngle = 180; // deg
     
@@ -51,6 +55,7 @@ void deployParachute(bool release){
       if (false) {
         Serial.println(release);
     }
+  }
 }
 
 // Funksjon for å arme ignition
@@ -60,19 +65,29 @@ void armIgnition(){
 
 // Funksjon for å antenne rakett motorer
 void ignite(){ 
+if (false) {
+  simPub[4] = 1;
+  publishSimulator(simPub, simRead);
+  } else {
     digitalWrite(24, HIGH);
     digitalWrite(25, HIGH);
     digitalWrite(26, HIGH);
     digitalWrite(27, HIGH);
+  }
 }
 
 // Funksjon for å resete ignition system
 void resetIgnition(){
+if (false) {
+    simPub[4] = 0;
+    publishSimulator(simPub, simRead);
+  } else {
     digitalWrite(28, LOW);
     digitalWrite(24, LOW);
     digitalWrite(25, LOW);
     digitalWrite(26, LOW);
     digitalWrite(27, LOW);
+  }
 }
 
 // Funksjon for å lage buzzer lyder
