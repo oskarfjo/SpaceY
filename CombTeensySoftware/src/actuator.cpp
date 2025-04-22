@@ -110,6 +110,9 @@ void updateServos() {
       servoPitchAnglePrev = servoPitchAngle;
       servoRollAnglePrev = servoRollAngle;
 
+      Serial.print(F("servo pitch: ")); Serial.println(servoPitchAngle);
+      Serial.print(F("servo roll: ")); Serial.println(servoRollAngle);
+
       // Translates the servo setpoints to PWM signals. Servos idle at 90deg
       int pitchPulse = map(constrain(90 - servoPitchAngle, 0, 180), 0, 180, 500, 2500);
       int rollPulse = map(constrain(90 + servoRollAngle, 0, 180), 0, 180, 500, 2500);

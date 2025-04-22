@@ -5,6 +5,7 @@
 #include <Adafruit_LIS3MDL.h>
 #include <Adafruit_Sensor_Calibration.h>
 #include <FS.h>
+
 #include "logger.h"
 #include "sensor.h"
 #include "SimulatorInterface.h"
@@ -53,6 +54,7 @@ float altitudePrev = 0.0;
 
 // store of values from last loop
 unsigned long timePrev = 0;
+unsigned long timeIgnite = 0;
 
 // Logging //
 bool logging = false;
@@ -108,6 +110,10 @@ void loop() {
     }
   }
 
+  if (flightPhase == LAUNCHED && (millis() - timeIgnite) >= 1000) {
+    resetIgnition();
+  }
+
   if (systemFlag.armed) {
     buzzer(armedSound);
     if (armedSound < 500) {
@@ -130,22 +136,25 @@ void loop() {
 
 
 void calibrateSensors() {
-  
+
+  int pressureIntAmount = 750;
+
   Serial.println(" "); Serial.println("--- CALIBRATION STARTING ---"); Serial.println(" ");
   for (int i = 0; i < 1500; i++) {
     buzzer(100);
     readImu();
     readPressure();
     readGps(gpsData);
-    initPressure += sensorData.pressure; // integrates pressure vals while calibrating
+    if (i>=pressureIntAmount) {
+      initPressure += sensorData.pressure; // integrates pressure vals while calibrating
+    }
     Serial.print(F("pitch calibrating: ")); Serial.println(sensorData.pitch);
     Serial.print(F("roll calibrating: ")); Serial.println(sensorData.roll);
     Serial.print(F("pressure calibrating: ")); Serial.println(sensorData.pressure);
     Serial.println(" ");
   } Serial.println("--- CALIBRATION FINISHED ---"); Serial.println(" ");
-
-  initPressure = initPressure/1500; // sets average pressure while calibrating as refference pressure
-
+  initPressure = initPressure/pressureIntAmount; // sets average pressure while calibrating as refference pressure
+  Serial.print(F("init pressure: ")); Serial.println(initPressure);
   sensorData.altitude = relativeAltitude(initPressure);
 }
 
@@ -203,12 +212,10 @@ void flightPhases() {
     reciever(100); // reading LoRa at 10 Hz
     
     if (systemFlag.launchSignaled && systemFlag.armed) {
-      
       ignite();
-      delay(100);
-      resetIgnition();
-
+      timeIgnite = millis();
       flightPhase = LAUNCHED;
+
     } else if (systemFlag.armSignaled && !systemFlag.armed) {
       armIgnition();
       systemFlag.armed = true;
@@ -255,6 +262,7 @@ void testPhases() {
     reciever(100);
     if (systemFlag.launchSignaled && systemFlag.armed) {
       ignite();
+      timeIgnite = millis();
       flightPhase = LAUNCHED;
     
     } else if (systemFlag.armSignaled && !systemFlag.armed) {

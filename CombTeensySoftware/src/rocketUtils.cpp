@@ -58,7 +58,7 @@ double calculateAltitude() {
     
     // Complementary filter
     // Higher alpha = more trust in barometer/GPS, lower alpha = more trust in IMU
-    float alpha = 0.3; // Adjust based on testing
+    float alpha = 1.0; // Adjust based on testing
 
     fusedAltitude = alpha * baroAlt + (1 - alpha) * (lastFusedAltitude + positionChange);
     
