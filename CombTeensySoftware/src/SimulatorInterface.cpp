@@ -64,8 +64,7 @@ void readSimulator(float simRead[12]) {
 }
 
 
-
-void publishSimulator(float simPub[2], float simRead[12]){
+void publishSimulator(float simPub[4], float simRead[12]){
 
     // TEST MODUS FOR Å SJEKKE OM GAZEBO REAGERER
     static bool testMode = false;  // Skru av/på test her
@@ -104,10 +103,8 @@ void publishSimulator(float simPub[2], float simRead[12]){
     float RadServo1 = (simPub[1] * 71) / 4068;
     char pubmsg[100];
     snprintf(pubmsg, sizeof(pubmsg),
-             "FULL,%.6f,%.6f,%.4f,%.4f,%.4f,%.2f",
-             RadServo0, RadServo1,
-             simRead[0], simRead[1], simRead[2],
-             simRead[5]);
+             "FULL,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.2f",
+             RadServo0, RadServo1, simPub[3], simPub[4], simRead[0], simRead[1], simRead[2],simRead[5]);
 
     Serial.println(pubmsg);
 }

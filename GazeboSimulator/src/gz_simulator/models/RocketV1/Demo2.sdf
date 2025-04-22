@@ -1,0 +1,371 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf version="1.7">
+    <model name="Rocket">
+        <link name="Engine">
+            <pose>-1.8125641257895325e-06 1.8200196286874416e-06 0.001000000000000065 2.08166817117217e-17 -1.3775145847668239e-15 -4.998541688550586e-16</pose>
+            <inertial>
+                <mass>0.028723555949169397</mass>
+                <pose>1.0477786611538601e-07 1.3183886769936052e-17 0.04749999999999999 0.0 0.0 0.0</pose>
+                <inertia>
+                    <ixx>3.0018095318649617e-05</ixx>
+                    <iyy>2.9875643757119133e-05</iyy>
+                    <izz>7.689725480938257e-06</izz>
+                    <ixy>-7.016928802798183e-20</ixy>
+                    <iyz>5.2515857155459e-20</iyz>
+                    <ixz>2.073962851021028e-20</ixz>
+                </inertia>
+            </inertial>
+            <visual name="Engine_visual">
+                <geometry>
+                    <mesh>
+                        <uri>/home/andreas/Rocketsim_ros2_ws/src/gz_simulator/models/RocketV1/meshes/Engine.stl</uri>
+                        <scale>0.001 0.001 0.001</scale>
+                    </mesh>
+                </geometry>
+				<material>
+					<ambient>0.0 0.0 0.0 1</ambient>
+					<diffuse>0.0 0.0 0.0 1</diffuse>
+					<specular>0.2 0.2 0.2 1</specular>
+					<emissive>0.0 0.0 0.0 1</emissive>
+				</material>
+            </visual>
+            <collision name="Engine_collision">
+                <geometry>
+                    <mesh>
+                        <uri>/home/andreas/Rocketsim_ros2_ws/src/gz_simulator/models/RocketV1/meshes/Engine.stl</uri>
+                        <scale>0.001 0.001 0.001</scale>
+                    </mesh>
+                </geometry>
+            </collision>
+        </link>
+        <link name="Y_ring">
+            <pose>-1.687538997430238e-16 0.0 0.09600000000000002 3.141592653589793 -1.3877787807814368e-15 0.0</pose>
+            <inertial>
+                <mass>0.009179454460001072</mass>
+                <pose>4.9705116017453964e-17 -4.1873023370798933e-17 0.04749999999999996 0.0 0.0 0.0</pose>
+                <inertia>
+                    <ixx>4.521624107367099e-06</ixx>
+                    <iyy>4.299072763747112e-06</iyy>
+                    <izz>8.60829275530661e-06</izz>
+                    <ixy>-1.3977840968503092e-20</ixy>
+                    <iyz>-8.275283514347903e-21</iyz>
+                    <ixz>5.992851809083267e-20</ixz>
+                </inertia>
+            </inertial>
+            <visual name="Y_ring_visual">
+                <geometry>
+                    <mesh>
+                        <uri>/home/andreas/Rocketsim_ros2_ws/src/gz_simulator/models/RocketV1/meshes/Y_ring.stl</uri>
+                        <scale>0.001 0.001 0.001</scale>
+                    </mesh>
+                </geometry>
+				<material>
+					<ambient>0.3 0.0 0.0 1</ambient>
+					<diffuse>1.0 0.0 0.0 1</diffuse>
+					<specular>0.5 0.5 0.5 1</specular>
+					<emissive>0.0 0.0 0.0 1</emissive>
+				</material>
+            </visual>
+            <collision name="Y_ring_collision">
+                <geometry>
+                    <mesh>
+                        <uri>/home/andreas/Rocketsim_ros2_ws/src/gz_simulator/models/RocketV1/meshes/Y_ring.stl</uri>
+                        <scale>0.001 0.001 0.001</scale>
+                    </mesh>
+                </geometry>
+            </collision>
+        </link>
+        <link name="X_ring">
+            <pose>-1.8125641258454062e-06 3.8302694349567904e-17 0.09599999999999997 -3.141592653589793 -1.3878317218657018e-15 -1.516034298079449e-18</pose>
+            <inertial>
+                <mass>0.007180821369474257</mass>
+                <pose>-1.1054017879291704e-16 -1.1552980952400499e-14 0.04749999999999999 0.0 0.0 0.0</pose>
+                <inertia>
+                    <ixx>1.8572623606356447e-06</ixx>
+                    <iyy>2.24343902820501e-06</iyy>
+                    <izz>3.939550138972454e-06</izz>
+                    <ixy>-2.189087697208224e-21</ixy>
+                    <iyz>2.697291816163817e-21</iyz>
+                    <ixz>-3.447493625890917e-20</ixz>
+                </inertia>
+            </inertial>
+            <visual name="X_ring_visual">
+                <geometry>
+                    <mesh>
+                        <uri>/home/andreas/Rocketsim_ros2_ws/src/gz_simulator/models/RocketV1/meshes/X_ring.stl</uri>
+                        <scale>0.001 0.001 0.001</scale>
+                    </mesh>
+                </geometry>
+				<material>
+					<ambient>0.0 0.3 0.0 1</ambient>
+					<diffuse>0.0 1.0 0.0 1</diffuse>
+					<specular>0.5 0.5 0.5 1</specular>
+					<emissive>0.0 0.0 0.0 1</emissive>
+				</material>
+            </visual>
+            <collision name="X_ring_collision">
+                <geometry>
+                    <mesh>
+                        <uri>/home/andreas/Rocketsim_ros2_ws/src/gz_simulator/models/RocketV1/meshes/X_ring.stl</uri>
+                        <scale>0.001 0.001 0.001</scale>
+                    </mesh>
+                </geometry>
+            </collision>
+        </link>
+        <link name="base_link">
+            <pose>0.0 0.0 0.0 0.0 -0.0 0.0</pose>
+            <inertial>
+                <mass>0.31307930825765756</mass>
+                <pose>-5.4303436734196704e-17 -1.4434207819684956e-17 0.1698642327163812 0.0 0.0 0.0</pose>
+                <inertia>
+                    <ixx>0.008533126785563871</ixx>
+                    <iyy>0.008533126785564565</iyy>
+                    <izz>0.0007356323820817046</izz>
+                    <ixy>3.626616460789906e-20</ixy>
+                    <iyz>3.492334229750196e-18</iyz>
+                    <ixz>4.883325827676547e-18</ixz>
+                </inertia>
+            </inertial>
+            <visual name="base_link_visual">
+            	<geometry>
+                    <mesh>
+                        <uri>/home/andreas/Rocketsim_ros2_ws/src/gz_simulator/models/RocketV1/meshes/base_link.stl</uri>
+                        <scale>0.001 0.001 0.001</scale>
+                    </mesh>
+                </geometry>
+				<material>
+					<ambient>0.3 0.3 0.3 1</ambient>
+					<diffuse>0.5 0.5 0.5 1</diffuse>
+					<specular>0.5 0.5 0.5 1</specular>
+					<emissive>0.0 0.0 0.0 1</emissive>
+				</material>
+            </visual>
+            <collision name="base_link_collision">
+                <geometry>
+                    <mesh>
+                        <uri>/home/andreas/Rocketsim_ros2_ws/src/gz_simulator/models/RocketV1/meshes/base_link.stl</uri>
+                        <scale>0.001 0.001 0.001</scale>
+                    </mesh>
+                </geometry>
+            </collision>
+
+	    <sensor name="imu_sensor" type="imu">
+ 	    	<pose>0 0 0 1.5708 0 -1.5708</pose>
+  		<update_rate>100.0</update_rate>
+  		<always_on>true</always_on>
+  		<visualize>true</visualize>
+  		<imu>
+    		    <angular_velocity>
+			<x>
+      		    	    <noise type="gaussian">
+				<mean>0.0</mean>
+        		    	<stddev>0.0</stddev>
+                		<bias_mean>0.0</bias_mean>
+                		<bias_stddev>0.0</bias_stddev>
+                		<dynamic_bias_stddev>0.0</dynamic_bias_stddev>
+                           	<dynamic_bias_correlation_time>400.0</dynamic_bias_correlation_time>
+                		<precision>0.0</precision>
+			    </noise>
+			</x>
+			<y>
+      		    	    <noise type="gaussian">
+				<mean>0.0</mean>
+        		    	<stddev>0.0</stddev>
+                		<bias_mean>0.0</bias_mean>
+                		<bias_stddev>0.0</bias_stddev>
+                		<dynamic_bias_stddev>0.0</dynamic_bias_stddev>
+                           	<dynamic_bias_correlation_time>400.0</dynamic_bias_correlation_time>
+                		<precision>0.0</precision>
+			    </noise>
+			</y>
+			<z>
+      		    	    <noise type="gaussian">
+				<mean>0.0</mean>
+        		    	<stddev>0.0</stddev>
+                		<bias_mean>0.0</bias_mean>
+                		<bias_stddev>0.0</bias_stddev>
+                		<dynamic_bias_stddev>0.0</dynamic_bias_stddev>
+                           	<dynamic_bias_correlation_time>400.0</dynamic_bias_correlation_time>
+                		<precision>0.0</precision>
+			    </noise>
+			</z>
+    		    </angular_velocity>
+    	            <linear_acceleration>
+      		        <x>
+      		    	    <noise type="gaussian">
+				<mean>0.0</mean>
+        		    	<stddev>0.0</stddev>
+                		<bias_mean>0.0</bias_mean>
+                		<bias_stddev>0.0</bias_stddev>
+                		<dynamic_bias_stddev>0.0</dynamic_bias_stddev>
+                           	<dynamic_bias_correlation_time>400.0</dynamic_bias_correlation_time>
+                		<precision>0.0</precision>
+			    </noise>
+			</x>
+			<y>
+      		    	    <noise type="gaussian">
+				<mean>0.0</mean>
+        		    	<stddev>0.0</stddev>
+                		<bias_mean>0.0</bias_mean>
+                		<bias_stddev>0.0</bias_stddev>
+                		<dynamic_bias_stddev>0.0</dynamic_bias_stddev>
+                           	<dynamic_bias_correlation_time>400.0</dynamic_bias_correlation_time>
+                		<precision>0.0</precision>
+			    </noise>
+			</y>
+			<z>
+      		    	    <noise type="gaussian">
+				<mean>0.0</mean>
+        		    	<stddev>0.0</stddev>
+                		<bias_mean>0.0</bias_mean>
+                		<bias_stddev>0.0</bias_stddev>
+                		<dynamic_bias_stddev>0.0</dynamic_bias_stddev>
+                           	<dynamic_bias_correlation_time>400.0</dynamic_bias_correlation_time>
+                		<precision>0.0</precision>
+			    </noise>
+			</z>
+    		    </linear_acceleration>
+  		</imu>
+
+  		<plugin
+                    filename="gz-sim-imu-system"
+                    name="gz::sim::systems::Imu">
+                    <topic>Imu</topic>
+       	  	    <publish_offset>true</publish_offset>
+  		</plugin>
+            </sensor>
+	    
+            <sensor name="magnetometer_sensor" type="magnetometer">
+    	        <pose>0 0 0 1.5708 0 -1.5708</pose>
+    		<update_rate>100.0</update_rate>
+    		<always_on>true</always_on>
+    		<visualize>true</visualize>
+    		<magnetometer>
+        	    <x>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+			    <bias_mean>0.0</bias_mean>
+                            <stddev>0.0</stddev>
+                        </noise>
+                    </x>
+
+		    <y>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+			    <bias_mean>0.0</bias_mean>
+                            <stddev>0.0</stddev>
+                        </noise>
+                    </y>
+
+                    <z>
+                        <noise type="gaussian">
+                            <mean>0.0</mean>
+			    <bias_mean>0.0</bias_mean>
+                            <stddev>0.0</stddev>
+                        </noise>
+                    </z>
+        	</magnetometer>
+    		<plugin
+        	    filename="gz-sim-magnetometer-system"
+        	    name="gz::sim::systems::Magnetometer">
+        	    <topic>Magnetometer</topic>
+    		</plugin>
+	    </sensor>
+
+	    <sensor name="air_pressure" type="air_pressure">
+    	        <pose>0 0 0 0 0 0</pose>
+    		<update_rate>100.0</update_rate>
+    		<always_on>true</always_on>
+    		<visualize>true</visualize>
+    		<air_pressure>
+		    <pressure>
+        	        <noise type="gaussian">
+            	            <mean>0.00000008</mean>
+			    <stddev>0.0</stddev>
+          	        </noise>
+		    </pressure>
+		    <reference_altitude>0</reference_altitude>
+    		</air_pressure>
+    		<plugin
+       		    filename="gz-sim-air-pressure-system"
+        	    name="gz::sim::systems::AirPressure">
+        	    <topic>Air_pressure</topic>
+    		</plugin>
+	    </sensor>
+	
+        </link>
+        <joint name="base_link_Rigid-5" type="fixed">
+            <pose>9.450773497121757e-17 -1.4817228106940786e-17 0.053499999999999985 0.0 0.0 0.0</pose>
+            <parent>base_link</parent>
+            <child>Y_ring</child>
+        </joint>
+        <joint name="Y_ring_Revolute-6" type="revolute">
+            <pose>-0.03250018743587429 3.856880553261303e-17 0.047499999999999966 0.0 0.0 0.0</pose>
+            <parent>Y_ring</parent>
+            <child>X_ring</child>
+            <axis>
+                <xyz expressed_in="__model__">1.0 0.0 0.0</xyz>
+                <limit>
+                    <lower>-0.174533</lower>
+                    <upper>0.174533</upper>
+                </limit>
+            </axis>
+        </joint>
+        <joint name="X_ring_Revolute-7" type="revolute">
+            <pose>-1.874358741575317e-07 0.0250001799803713 0.04749999999999991 0.0 0.0 0.0</pose>
+            <parent>X_ring</parent>
+            <child>Engine</child>
+            <axis>
+                <xyz expressed_in="__model__">-0.0 1.0 0.0</xyz>
+                <limit>
+                    <lower>-0.174533</lower>
+                    <upper>0.174533</upper>
+                </limit>
+            </axis>
+        </joint>
+		
+	<plugin
+		filename="gz-sim-joint-position-controller-system"
+		name="gz::sim::systems::JointPositionController">
+		<joint_name>X_ring_Revolute-7</joint_name>
+		<topic>X_ring</topic>
+		<p_gain>1.0</p_gain>
+		<i_gain>0.001</i_gain>
+		<d_gain>0.01</d_gain>
+		<i_max>0.5</i_max>
+		<i_min>-0.5</i_min>
+		<cmd_max>1.0</cmd_max>
+		<cmd_min>-1.0</cmd_min>
+	</plugin>
+		
+	<plugin
+		filename="gz-sim-joint-position-controller-system"
+		name="gz::sim::systems::JointPositionController">
+		<joint_name>Y_ring_Revolute-6</joint_name>
+		<topic>Y_ring</topic>
+		<p_gain>1.0</p_gain>
+		<i_gain>0.001</i_gain>
+		<d_gain>0.01</d_gain>
+		<i_max>0.5</i_max>
+		<i_min>-0.5</i_min>
+		<cmd_max>1.0</cmd_max>
+		<cmd_min>-1.0</cmd_min>
+	</plugin>
+
+    <plugin
+      filename="gz-sim-pose-publisher-system"
+      name="gz::sim::systems::PosePublisher">
+      <publish_link_pose>true</publish_link_pose>
+      <publish_visual_pose>false</publish_visual_pose>
+      <publish_collision_pose>false</publish_collision_pose>
+      <publish_sensor_pose>false</publish_sensor_pose>
+      <publish_model_pose>true</publish_model_pose>
+      <publish_nested_model_pose>false</publish_nested_model_pose>
+      <use_pose_vector_msg>false</use_pose_vector_msg>
+      <update_frequency>30</update_frequency>
+      <static_publisher>false</static_publisher>
+      <static_update_frequency>1</static_update_frequency>
+    </plugin>
+
+    </model>
+</sdf>
