@@ -71,10 +71,10 @@ void ignite(){
       publishSimulator(simPub, simRead);
     }
     else{
-    digitalWrite(24, HIGH);
-    digitalWrite(25, HIGH);
-    digitalWrite(26, HIGH);
-    digitalWrite(27, HIGH);
+      digitalWrite(24, HIGH);
+      digitalWrite(25, HIGH);
+      digitalWrite(26, HIGH);
+      digitalWrite(27, HIGH);
     }
 }
 
@@ -85,11 +85,11 @@ void resetIgnition(){
       publishSimulator(simPub, simRead);
     }
     else{
-    digitalWrite(28, LOW);
-    digitalWrite(24, LOW);
-    digitalWrite(25, LOW);
-    digitalWrite(26, LOW);
-    digitalWrite(27, LOW);
+      digitalWrite(28, LOW);
+      digitalWrite(24, LOW);
+      digitalWrite(25, LOW);
+      digitalWrite(26, LOW);
+      digitalWrite(27, LOW);
     }
 }
 

@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Adafruit_AHRS.h>
+#include "SimulatorInterface.h"
 
 Adafruit_Madgwick sim_filter;
 
