@@ -72,6 +72,10 @@ float simRead[12];
 void setup() {
   initActuator();
 
+  if (simData.simMode) {
+    programMode = SIM;
+  }
+
   if (logging) {
     initLog();
   }
@@ -102,13 +106,12 @@ void loop() {
 
   readSensors();
 
-  if (true) {
-    if (programMode == LAB) {
-      testPhases();
-    } else {
-      flightPhases();
-    }
+  if (programMode == LAB) {
+    testPhases();
+  } else {
+    flightPhases();
   }
+
 
   if (flightPhase == LAUNCHED && (millis() - timeIgnite) >= 1000) {
     resetIgnition();

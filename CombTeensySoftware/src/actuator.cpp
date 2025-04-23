@@ -35,9 +35,10 @@ void initActuator(){
 
 // Funksjon for fallskjermsystem
 void deployParachute(bool release){
-if (false) {
-  simPub[3] = 1;
+if (simData.simMode) {
+  simPub[2] = 1;
   publishSimulator(simPub, simRead);
+
   } else {
     double parachuteLockAngle = 90; // deg
     double parachuteOpenAngle = 180; // deg
@@ -65,9 +66,10 @@ void armIgnition(){
 
 // Funksjon for å antenne rakett motorer
 void ignite(){ 
-if (false) {
-  simPub[4] = 1;
+if (simData.simMode) {
+  simPub[3] = 1;
   publishSimulator(simPub, simRead);
+
   } else {
     digitalWrite(24, HIGH);
     digitalWrite(25, HIGH);
@@ -78,9 +80,10 @@ if (false) {
 
 // Funksjon for å resete ignition system
 void resetIgnition(){
-if (false) {
-    simPub[4] = 0;
+if (simData.simMode) {
+    simPub[3] = 0;
     publishSimulator(simPub, simRead);
+
   } else {
     digitalWrite(28, LOW);
     digitalWrite(24, LOW);
@@ -99,10 +102,11 @@ void buzzer(int freq){
 
 
 void updateServos() {
-    if (false) {
+    if (simData.simMode) {
       simPub[0] = ctrlData.gimbalPitchAngle;
       simPub[1] = ctrlData.gimbalRollAngle;
       publishSimulator(simPub, simRead);
+
     } else {
       // servo specs
       const double maxServoChange = 0.3 * (60/0.04); // 0.04 s for 60 deg : 1500*0.3 = maxDeg pr. s
