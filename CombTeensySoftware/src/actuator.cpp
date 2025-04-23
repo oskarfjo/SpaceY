@@ -62,6 +62,7 @@ if (simData.simMode) {
 // Funksjon for å arme ignition
 void armIgnition(){
     digitalWrite(28, HIGH);
+    systemFlag.armed = true;
 }
 
 // Funksjon for å antenne rakett motorer
@@ -91,6 +92,11 @@ if (simData.simMode) {
     digitalWrite(26, LOW);
     digitalWrite(27, LOW);
   }
+}
+
+void disarmIgnition() {
+  digitalWrite(28, LOW);
+  systemFlag.armed = false;
 }
 
 // Funksjon for å lage buzzer lyder

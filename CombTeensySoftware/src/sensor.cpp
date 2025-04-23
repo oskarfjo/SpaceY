@@ -228,8 +228,6 @@ void receiveLoRaMessage() {
                 int positions[6] = {0};  // To store positions of commands
                 int count = 0;
                 
-                // Find all comma positions
-                // Fix sign comparison warning by explicitly casting to int
                 for (int i = 0; i < (int)message.length() && count < 6; i++) {
                     if (message.charAt(i) == ',') {
                         positions[count] = i;
@@ -250,6 +248,9 @@ void receiveLoRaMessage() {
                         Serial.println("ARM COMMAND RECEIVED!");
                         systemFlag.armSignaled = true;
                         Serial.println("arm");
+                    } else if (commands[0] == "NULL" && systemFlag.armSignaled) {
+                        systemFlag.armSignaled = false;
+                        disarmIgnition();
                     }
                     
                     // Check for LAUNCH command
@@ -262,7 +263,9 @@ void receiveLoRaMessage() {
                     // Check for PARACHUTE command
                     if (commands[2] == "PARACHUTE") {
                         Serial.println("PARACHUTE COMMAND RECEIVED!");
-                        // Add parachute deployment handling here if needed
+                        deployParachute(true);
+                    } else if (commands[2] == "NULL") {
+                        deployParachute(false);
                     }
                     
                     // Print full message for debugging

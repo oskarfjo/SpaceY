@@ -106,6 +106,10 @@ void loop() {
 
   readSensors();
 
+  if (!simData.simMode) {
+    reciever(100); // reads LoRa at 10Hz
+  }
+
   if (programMode == LAB) {
     testPhases();
   } else {
@@ -212,8 +216,6 @@ void flightPhases() {
       updateServos();  
     }
     
-    reciever(100); // reading LoRa at 10 Hz
-    
     if (systemFlag.launchSignaled && systemFlag.armed) {
       ignite();
       timeIgnite = millis();
@@ -221,7 +223,6 @@ void flightPhases() {
 
     } else if (systemFlag.armSignaled && !systemFlag.armed) {
       armIgnition();
-      systemFlag.armed = true;
     }
 
   } else if (flightPhase == LAUNCHED && sensorData.altitude >= 10.0) {
@@ -270,7 +271,6 @@ void testPhases() {
     
     } else if (systemFlag.armSignaled && !systemFlag.armed) {
       armIgnition();
-      systemFlag.armed = true;
     
     }
   } else if (flightPhase == LAUNCHED || flightPhase == FLIGHT) {

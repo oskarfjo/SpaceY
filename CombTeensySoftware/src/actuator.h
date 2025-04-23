@@ -10,5 +10,5 @@ void ignite();
 void resetIgnition();
 void buzzer(int freq);
 void updateServos();
-
+void disarmIgnition();
 #endif
