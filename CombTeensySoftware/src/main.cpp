@@ -57,7 +57,7 @@ unsigned long timePrev = 0;
 unsigned long timeIgnite = 0;
 
 // Logging //
-bool logging = false;
+bool logging = true;
 const unsigned long logInterval = 100; // ms
 unsigned long logTimePrev = 0;
 
@@ -118,10 +118,12 @@ void loop() {
 
 
   if (flightPhase == LAUNCHED && (millis() - timeIgnite) >= 1000) {
+    // resets ignition 1 second after launch
     resetIgnition();
   }
 
   if (systemFlag.armed && !systemFlag.launchSignaled) {
+    // makes a distinct noise when armed
     buzzer(armedSound);
     if (armedSound < 500) {
       armedSound += 1;
@@ -278,9 +280,9 @@ void testPhases() {
       ctrl(0.5, 0.0, 0.0, 0.0, 0.0);
       updateServos();
     }
-  } else if (flightPhase == LAUNCHED || flightPhase == FLIGHT) {
+  } else if (flightPhase == LAUNCHED) {
     // flight phase bypass
-    //ctrl(0.5, 0.35, 0.3, 0.3, 0.0);
+    //ctrl(0.5, 0.35, 0.3, 0.3, 0.0); working values
     ctrl(0.5, 0.45, 0.3, 0.3, 0.0);
     updateServos();
 
@@ -289,6 +291,7 @@ void testPhases() {
 
 
 void reciever(unsigned long interval) {
+  // fetches LoRa messages at a set interval in milliseconds
   unsigned long now = millis();
   if (now - lastMessageTime >= interval) {
     lastMessageTime = now;

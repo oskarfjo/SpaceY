@@ -66,7 +66,7 @@ void armIgnition(){
 }
 
 // Funksjon for å antenne rakett motorer
-void ignite(){ 
+void ignite(){
 if (simData.simMode) {
   simPub[3] = 1;
   publishSimulator(simPub, simRead);
@@ -135,8 +135,10 @@ void updateServos() {
       servoPitchAnglePrev = servoPitchAngle;
       servoRollAnglePrev = servoRollAngle;
 
-      Serial.print(F("servo pitch: ")); Serial.println(servoPitchAngle);
-      Serial.print(F("servo roll: ")); Serial.println(servoRollAngle);
+      if (false) {
+        Serial.print(F("servo pitch: ")); Serial.println(servoPitchAngle);
+        Serial.print(F("servo roll: ")); Serial.println(servoRollAngle);
+      }
 
       // Translates the servo setpoints to PWM signals. Servos idle at 90deg
       int pitchPulse = map(constrain(90 - servoPitchAngle, 0, 180), 0, 180, 500, 2500);

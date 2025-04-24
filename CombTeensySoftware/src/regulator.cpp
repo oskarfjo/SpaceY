@@ -118,7 +118,7 @@ void ctrl(double kp, double ki, double kd, double dGain, double reqGain) {
     ctrlData.gimbalPitchAngle = constrain(pCTRL, -gimbalLim, gimbalLim);
     ctrlData.gimbalRollAngle = constrain(rCTRL, -gimbalLim, gimbalLim);
     
-    if (true) {
+    if (false) {
       Serial.print("Pitch: ");
       Serial.print(F("pitch IMU: ")); Serial.println(sensorData.pitch);
       Serial.print(F("pitch error: ")); Serial.println(pitchError);

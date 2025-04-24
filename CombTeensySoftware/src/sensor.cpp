@@ -144,17 +144,7 @@ void readImu(){
     float roll = filter.getRoll();
     float pitch = filter.getPitch();
     float heading = filter.getYaw();
-/* 
-    imuData[0] = heading;
-    imuData[1] = pitch;
-    imuData[2] = roll;
-    imuData[3] = gx;
-    imuData[4] = gy;
-    imuData[5] = gz;
-    imuData[6] = accel.acceleration.x;
-    imuData[7] = accel.acceleration.y;
-    imuData[8] = accel.acceleration.z;
- */
+
     sensorData.heading = heading;
     sensorData.pitch = pitch;
     sensorData.roll = roll;
@@ -269,7 +259,7 @@ void receiveLoRaMessage() {
                     }
                     
                     // Print full message for debugging
-                    if (true) {
+                    if (false) {
                         Serial.print("Received valid message: ");
                         Serial.println(message);
                         Serial.print("Commands: ");
@@ -292,39 +282,3 @@ void receiveLoRaMessage() {
         }
     }
 }
-
-/*
-void receiveLoRaMessage() {
-    if (rf95.available()) {
-        Serial.println("available message");
-
-        uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
-        uint8_t len = sizeof(buf);
-
-        if (rf95.recv(buf, &len)) {
-            // Null-terminate the received message
-            buf[len] = 0;
-            
-            // Check if it's the launch command
-            if (strcmp((char*)buf, launchCmd) == 0 && !systemFlag.launchSignaled) {
-                Serial.println("LAUNCH COMMAND RECEIVED!");
-                systemFlag.launchSignaled = true;
-                Serial.println("launch");
-            } else if (strcmp((char*)buf, armCmd) == 0 && !systemFlag.armSignaled) {
-                Serial.println("ARM COMMAND RECEIVED!");
-                systemFlag.armSignaled = true;
-                Serial.println("arm");
-            }
-            
-            if (true) {
-                Serial.print("Received: ");
-                Serial.println((char*)buf);
-                Serial.print("RSSI: ");
-                Serial.println(rf95.lastRssi(), DEC);
-            }
-        } else {
-            Serial.print("Message didnt fit");
-        }
-    }
-}
-*/
