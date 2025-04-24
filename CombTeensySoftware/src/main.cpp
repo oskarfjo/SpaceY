@@ -106,7 +106,7 @@ void loop() {
 
   readSensors();
 
-  if (!simData.simMode) {
+  if (false && !simData.simMode) {
     reciever(100); // reads LoRa at 10Hz
   }
 
@@ -121,7 +121,7 @@ void loop() {
     resetIgnition();
   }
 
-  if (systemFlag.armed) {
+  if (systemFlag.armed && !systemFlag.launchSignaled) {
     buzzer(armedSound);
     if (armedSound < 500) {
       armedSound += 1;
@@ -195,8 +195,10 @@ void readSensors() {
   if (false) {
     Serial.print(F("pitchMeasured: ")); Serial.println(sensorData.pitch);
     Serial.print(F("rollMeasured: ")); Serial.println(sensorData.roll);
-    Serial.print(F("pressure (Bar): ")); Serial.println(sensorData.pressure);
-    Serial.print(F("altitude (meters): ")); Serial.println(sensorData.altitude);
+    Serial.print(F("pitch gyro: ")); Serial.println(sensorData.gyroZ);
+    Serial.print(F("roll gyro: ")); Serial.println(sensorData.gyroX);
+    //Serial.print(F("pressure (Bar): ")); Serial.println(sensorData.pressure);
+    //Serial.print(F("altitude (meters): ")); Serial.println(sensorData.altitude);
   }
 }
 
@@ -272,10 +274,14 @@ void testPhases() {
     } else if (systemFlag.armSignaled && !systemFlag.armed) {
       armIgnition();
     
+    } else if (systemFlag.armed) {
+      ctrl(0.5, 0.0, 0.0, 0.0, 0.0);
+      updateServos();
     }
   } else if (flightPhase == LAUNCHED || flightPhase == FLIGHT) {
     // flight phase bypass
-    ctrl(0.5, 0.0, 0.0, 1.0, 0.0);
+    //ctrl(0.5, 0.35, 0.3, 0.3, 0.0);
+    ctrl(0.5, 0.45, 0.3, 0.3, 0.0);
     updateServos();
 
   }
