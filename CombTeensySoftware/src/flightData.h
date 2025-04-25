@@ -23,6 +23,17 @@ struct Flags
     bool armed = false;
     bool launchSignaled = false;
     bool armSignaled = false;
+
+    enum FlightPhase {
+        PREEFLIGHT = 0,
+        LAUNCHED = 1,
+        FLIGHT = 2,
+        APOGEE = 3,
+        DESCENT = 4,
+        GROUND = 5,
+      };
+      
+    FlightPhase flightPhase = PREEFLIGHT;
 };
 
 struct CtrlData

@@ -20,23 +20,12 @@ void flightPhases();
 void testPhases();
 void reciever(unsigned long interval);
 
-enum FlightPhase {
-  PREEFLIGHT = 0,
-  LAUNCHED = 1,
-  FLIGHT = 2,
-  APOGEE = 3,
-  DESCENT = 4,
-  GROUND = 5,
-};
-
 enum ProgramMode {
   LIVE = 0,
   LAB = 1,
   SIM = 2,
 };
 
-
-FlightPhase flightPhase = PREEFLIGHT;
 ProgramMode programMode = LAB;
 
 // coms bool
@@ -117,7 +106,7 @@ void loop() {
   }
 
 
-  if (flightPhase == LAUNCHED && (millis() - timeIgnite) >= 1000) {
+  if (systemFlag.flightPhase == systemFlag.LAUNCHED && (millis() - timeIgnite) >= 1000) {
     // resets ignition 1 second after launch
     resetIgnition();
   }
@@ -207,13 +196,13 @@ void readSensors() {
 
 void flightPhases() {
 
-  if (flightPhase == LAUNCHED || flightPhase == FLIGHT) {
+  if (systemFlag.flightPhase == systemFlag.LAUNCHED || systemFlag.flightPhase == systemFlag.FLIGHT) {
     // rocket is ascending
     ctrl(0.5, 0.35, 0.0, 0.3, 0.0);
     updateServos();
   }
 
-  if (flightPhase == PREEFLIGHT) {
+  if (systemFlag.flightPhase == systemFlag.PREEFLIGHT) {
     // rocket has not yet launched
     if (systemFlag.armed) { // ensures correct angle at lauch
       ctrl(0.5, 0.0, 0.0, 0.0, 0.0);
@@ -223,56 +212,56 @@ void flightPhases() {
     if (systemFlag.launchSignaled && systemFlag.armed) {
       ignite();
       timeIgnite = millis();
-      flightPhase = LAUNCHED;
+      systemFlag.flightPhase = systemFlag.LAUNCHED;
 
     } else if (systemFlag.armSignaled && !systemFlag.armed) {
       armIgnition();
     }
 
-  } else if (flightPhase == LAUNCHED && sensorData.altitude >= 10.0) {
+  } else if (systemFlag.flightPhase == systemFlag.LAUNCHED && sensorData.altitude >= 10.0) {
     // rocket is in stable flight
-    flightPhase = FLIGHT;
+    systemFlag.flightPhase = systemFlag.FLIGHT;
   
-  } else if (flightPhase == FLIGHT && sensorData.altitude >= sensorData.altitudeMax) {
+  } else if (systemFlag.flightPhase == systemFlag.FLIGHT && sensorData.altitude >= sensorData.altitudeMax) {
     // rocket is ascending
     sensorData.altitudeMax = sensorData.altitude;
 
-  } else if (flightPhase == FLIGHT && (sensorData.altitude + 0.5) < sensorData.altitudeMax) {
+  } else if (systemFlag.flightPhase == systemFlag.FLIGHT && (sensorData.altitude + 0.5) < sensorData.altitudeMax) {
     // rocket has reached its apogee and starts freefall
-    flightPhase = APOGEE;
+    systemFlag.flightPhase = systemFlag.APOGEE;
 
-  } else if (flightPhase == APOGEE && (sensorData.altitudeMax - sensorData.altitude) > 0.3) {
+  } else if (systemFlag.flightPhase == systemFlag.APOGEE && (sensorData.altitudeMax - sensorData.altitude) > 0.3) {
     // rocket has fallen a certain distance from apogee and deploys parachute
     deployParachute(true);
-    flightPhase = DESCENT;
+    systemFlag.flightPhase = systemFlag.DESCENT;
 
-  } else if (flightPhase == DESCENT) {
+  } else if (systemFlag.flightPhase == systemFlag.DESCENT) {
     // rocket is decending with parachute
     double altitudeDerivative = (sensorData.altitude - altitudePrev)/ctrlData.dt; // should use imu data
     if (abs(altitudeDerivative) < 0.001) {
-      flightPhase = GROUND;
+      systemFlag.flightPhase = systemFlag.GROUND;
     }
     deployParachute(true);
 
-  } else if (flightPhase == GROUND && logging) {
+  } else if (systemFlag.flightPhase == systemFlag.GROUND && logging) {
     // rocket has landed; start shutdown
     logData();
     logging = false;
   }
 
   if (false) {
-    Serial.print(F("flightPhase: ")); Serial.println(flightPhase);
+    Serial.print(F("flightPhase: ")); Serial.println(systemFlag.flightPhase);
   }
 }
 
 void testPhases() {
-  if (flightPhase == PREEFLIGHT) {
+  if (systemFlag.flightPhase == systemFlag.PREEFLIGHT) {
     reciever(100);
 
     if (systemFlag.launchSignaled && systemFlag.armed) {
       ignite();
       timeIgnite = millis();
-      flightPhase = LAUNCHED;
+      systemFlag.flightPhase = systemFlag.LAUNCHED;
     } else if (systemFlag.armSignaled && !systemFlag.armed) {
       armIgnition();
     } else if (systemFlag.armed) {
@@ -286,12 +275,16 @@ void testPhases() {
       updateServos();
     }
 
-  } else if (flightPhase == LAUNCHED) {
+  } else if (systemFlag.flightPhase == systemFlag.LAUNCHED) {
     // flight phase bypass
     //ctrl(0.5, 0.35, 0.3, 0.3, 0.0); working values
     ctrl(0.45, 0.35, 0.1, 0.3, 0.0);
     updateServos();
 
+  }
+
+  if (true) {
+    Serial.print(F("flightPhase: ")); Serial.println(systemFlag.flightPhase);
   }
 }
 
