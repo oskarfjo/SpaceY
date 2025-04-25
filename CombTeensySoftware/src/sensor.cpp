@@ -202,7 +202,7 @@ void sendLoRaMessage(String message) {
 
 void receiveLoRaMessage() {
     if (rf95.available()) {
-        Serial.println("available message");
+        //Serial.println("available message");
 
         uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
         uint8_t len = sizeof(buf);

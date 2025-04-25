@@ -57,7 +57,7 @@ unsigned long timePrev = 0;
 unsigned long timeIgnite = 0;
 
 // Logging //
-bool logging = true;
+bool logging = false;
 const unsigned long logInterval = 100; // ms
 unsigned long logTimePrev = 0;
 
@@ -268,18 +268,24 @@ void flightPhases() {
 void testPhases() {
   if (flightPhase == PREEFLIGHT) {
     reciever(100);
+
     if (systemFlag.launchSignaled && systemFlag.armed) {
       ignite();
       timeIgnite = millis();
       flightPhase = LAUNCHED;
-    
     } else if (systemFlag.armSignaled && !systemFlag.armed) {
       armIgnition();
-    
     } else if (systemFlag.armed) {
       ctrl(0.5, 0.0, 0.0, 0.0, 0.0);
       updateServos();
     }
+
+    if (!systemFlag.armed) {
+      ctrlData.pitchSet = 0.0;
+      ctrlData.rollSet = 0.0;
+      updateServos();
+    }
+
   } else if (flightPhase == LAUNCHED) {
     // flight phase bypass
     //ctrl(0.5, 0.35, 0.3, 0.3, 0.0); working values

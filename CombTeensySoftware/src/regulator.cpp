@@ -107,8 +107,8 @@ void ctrl(double kp, double ki, double kd, double dGain, double reqGain) {
     double uRollEstimate = requiredForceEstimator(sensorData.roll, sensorData.gyroX, ctrlData.rollSet);
     
     // PID
-    double uPitch = pP + pI + pD;
-    double uRoll = rP + rI + rD;
+    double uPitch = constrain(pP + pI + pD, -gimbalLim, gimbalLim);
+    double uRoll = constrain(rP + rI + rD, -gimbalLim, gimbalLim);
   
     // combines weighted calculated and estimated ctrl-inputs
     double pCTRL = uPitchEstimate*reqGain + (1-reqGain)*uPitch;

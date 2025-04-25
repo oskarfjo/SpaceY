@@ -135,7 +135,7 @@ void updateServos() {
       servoPitchAnglePrev = servoPitchAngle;
       servoRollAnglePrev = servoRollAngle;
 
-      if (false) {
+      if (true) {
         Serial.print(F("servo pitch: ")); Serial.println(servoPitchAngle);
         Serial.print(F("servo roll: ")); Serial.println(servoRollAngle);
       }
@@ -145,12 +145,12 @@ void updateServos() {
       int rollPulse = map(constrain(90 + servoRollAngle, 0, 180), 0, 180, 500, 2500);
   
       // mannualy sends the PWM signal to the servos
-      digitalWrite(pitchPin, HIGH);
-      delayMicroseconds(pitchPulse);
-      digitalWrite(pitchPin, LOW);
-      
       digitalWrite(rollPin, HIGH);
       delayMicroseconds(rollPulse);
       digitalWrite(rollPin, LOW);
+      
+      digitalWrite(pitchPin, HIGH);
+      delayMicroseconds(pitchPulse);
+      digitalWrite(pitchPin, LOW);
     }
   }

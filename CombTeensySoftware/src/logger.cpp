@@ -36,7 +36,7 @@ void initLog() {
       return;
     }
     if (storedData.fileSize() == 0) {
-      storedData.println("Time, altitude, pitchMeasured, rollMeasured, pitchGimbal, rollGimbal, pitchError, rollError"); // headers at the top csv
+      storedData.println("Time(s), dt, altitude, pitchMeasured, rollMeasured, pitchGimbal, rollGimbal, pitchError, rollError"); // headers at the top csv
       storedData.flush();
     }
   }
@@ -47,10 +47,12 @@ void initLog() {
       Serial.println("Log file not open!");
       return;
     }
+
+    unsigned long timeSeconds = millis()/1000;
   
     snprintf(logBuffer[logBufferCount], 128,
-             "%lu,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
-             millis(), sensorData.altitude, sensorData.pitch, sensorData.roll, ctrlData.gimbalPitchAngle,
+             "%lu,%.5f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
+             timeSeconds, ctrlData.dt, sensorData.altitude, sensorData.pitch, sensorData.roll, ctrlData.gimbalPitchAngle,
              ctrlData.gimbalRollAngle, ctrlData.pitchError, ctrlData.rollError);
   
     logBufferCount++;
