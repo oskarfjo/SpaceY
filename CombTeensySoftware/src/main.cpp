@@ -20,14 +20,6 @@ void flightPhases();
 void testPhases();
 void reciever(unsigned long interval);
 
-enum ProgramMode {
-  LIVE = 0,
-  LAB = 1,
-  SIM = 2,
-};
-
-ProgramMode programMode = LAB;
-
 // coms bool
 int armedSound = 200;
 unsigned long lastMessageTime = 0;
@@ -61,15 +53,11 @@ float simRead[12];
 void setup() {
   initActuator();
 
-  if (simData.simMode) {
-    programMode = SIM;
-  }
-
   if (logging) {
     initLog();
   }
 
-  if (programMode == SIM) {
+  if (systemFlag.programMode == systemFlag.SIM) {
     initSimulatorinterface();
   } else {
     Serial.begin(115200);
@@ -95,11 +83,11 @@ void loop() {
 
   readSensors();
 
-  if (false && !simData.simMode) {
+  if (false && !(systemFlag.programMode == systemFlag.SIM)) {
     reciever(100); // reads LoRa at 10Hz
   }
 
-  if (programMode == LAB) {
+  if (systemFlag.programMode == systemFlag.LAB) {
     testPhases();
   } else {
     flightPhases();
@@ -161,7 +149,7 @@ void readSensors() {
   // updates the measurement variables to the latest imu reading from sensor.ccp
   altitudePrev = sensorData.altitude;
   
-  if (programMode == SIM) {
+  if (systemFlag.programMode == systemFlag.SIM) {
     // fetches the latest sim data
     readSimulator(simRead);
 

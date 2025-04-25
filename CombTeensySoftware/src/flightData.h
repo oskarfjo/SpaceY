@@ -32,7 +32,15 @@ struct Flags
         DESCENT = 4,
         GROUND = 5,
       };
+
+    enum ProgramMode {
+        LIVE = 0,
+        LAB = 1,
+        SIM = 2,
+    };
       
+    ProgramMode programMode = LAB;
+
     FlightPhase flightPhase = PREEFLIGHT;
 };
 
@@ -54,15 +62,9 @@ struct CtrlData
     double rollError = 0.0;
 };
 
-struct SimData
-{
-    bool const simMode = false;
-};
-
 
 extern SensorData sensorData;
 extern Flags systemFlag;
 extern CtrlData ctrlData;
-extern SimData simData;
 
 #endif // FLIGHT_DATA_H
