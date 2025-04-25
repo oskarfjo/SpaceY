@@ -107,8 +107,8 @@ void ctrl(double kp, double ki, double kd, double dGain, double reqGain) {
     double uRollEstimate = requiredForceEstimator(sensorData.roll, sensorData.gyroX, ctrlData.rollSet);
     
     // PID
-    double uPitch = constrain(pP + pI + pD, -gimbalLim, gimbalLim);
-    double uRoll = constrain(rP + rI + rD, -gimbalLim, gimbalLim);
+    double uPitch = constrain((pP + pI + pD), -gimbalLim, gimbalLim);
+    double uRoll = constrain((rP + rI + rD), -gimbalLim, gimbalLim);
   
     // combines weighted calculated and estimated ctrl-inputs
     double pCTRL = uPitchEstimate*reqGain + (1-reqGain)*uPitch;
@@ -118,9 +118,10 @@ void ctrl(double kp, double ki, double kd, double dGain, double reqGain) {
     ctrlData.gimbalPitchAngle = constrain(pCTRL, -gimbalLim, gimbalLim);
     ctrlData.gimbalRollAngle = constrain(rCTRL, -gimbalLim, gimbalLim);
     
-    if (false) {
+    if (true) {
       Serial.print("Pitch: ");
       Serial.print(F("pitch IMU: ")); Serial.println(sensorData.pitch);
+      Serial.print(F("pitch SET: ")); Serial.println(ctrlData.pitchSet);
       Serial.print(F("pitch error: ")); Serial.println(pitchError);
       Serial.print(F("\tpP: ")); Serial.print(pP);
       Serial.print(F("\tpI: ")); Serial.print(pI);
@@ -131,7 +132,8 @@ void ctrl(double kp, double ki, double kd, double dGain, double reqGain) {
       Serial.println(" ");
       Serial.print("Roll: ");
       Serial.print(F("roll IMU: ")); Serial.println(sensorData.roll);
-      Serial.print(F("pitch error: ")); Serial.println(pitchError);
+      Serial.print(F("roll SET: ")); Serial.println(ctrlData.rollSet);
+      Serial.print(F("roll error: ")); Serial.println(rollError);
       Serial.print(F("\trP: ")); Serial.print(rP);
       Serial.print(F("\trI: ")); Serial.print(rI);
       Serial.print(F("\trD: ")); Serial.println(rD);

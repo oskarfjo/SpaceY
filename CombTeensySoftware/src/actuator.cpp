@@ -115,7 +115,7 @@ void updateServos() {
 
     } else {
       // servo specs
-      const double maxServoChange = 0.3 * (60/0.04); // 0.04 s for 60 deg : 1500*0.3 = maxDeg pr. s
+      //const double maxServoChange = 0.3 * (60/0.04); // 0.04 s for 60 deg : 1500*0.3 = maxDeg pr. s
 
       // gear geometry in mm
       const double servoPitchRad = 7.7;
@@ -123,20 +123,22 @@ void updateServos() {
       const double servoRollRad = 7.7;
       const double gimbalRollRad = 63.0;
 
-      double maxChange = maxServoChange * 0.006;
+      //double maxChange = maxServoChange * ctrlData.dt;
 
       // calculates servo setpoints from desired gimbal angle using physical geometry
       double servoPitchAngle = - ctrlData.gimbalPitchAngle * gimbalPitchRad / servoPitchRad;
       double servoRollAngle = - ctrlData.gimbalRollAngle * gimbalRollRad / servoRollRad;
 
-      servoPitchAngle = constrain(servoPitchAngle, servoPitchAnglePrev - maxChange, servoPitchAnglePrev + maxChange);
-      servoRollAngle = constrain(servoRollAngle, servoRollAnglePrev - maxChange, servoRollAnglePrev + maxChange);
+      //servoPitchAngle = constrain(servoPitchAngle, servoPitchAnglePrev - maxChange, servoPitchAnglePrev + maxChange);
+      //servoRollAngle = constrain(servoRollAngle, servoRollAnglePrev - maxChange, servoRollAnglePrev + maxChange);
 
       servoPitchAnglePrev = servoPitchAngle;
       servoRollAnglePrev = servoRollAngle;
 
       if (true) {
+        Serial.print(F("gimbal pitch: ")); Serial.println(ctrlData.gimbalPitchAngle);
         Serial.print(F("servo pitch: ")); Serial.println(servoPitchAngle);
+        Serial.print(F("gimbal roll: ")); Serial.println(ctrlData.gimbalRollAngle);
         Serial.print(F("servo roll: ")); Serial.println(servoRollAngle);
       }
 
@@ -148,7 +150,7 @@ void updateServos() {
       digitalWrite(rollPin, HIGH);
       delayMicroseconds(rollPulse);
       digitalWrite(rollPin, LOW);
-      
+
       digitalWrite(pitchPin, HIGH);
       delayMicroseconds(pitchPulse);
       digitalWrite(pitchPin, LOW);

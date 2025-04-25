@@ -57,7 +57,7 @@ unsigned long timePrev = 0;
 unsigned long timeIgnite = 0;
 
 // Logging //
-bool logging = false;
+bool logging = true;
 const unsigned long logInterval = 100; // ms
 unsigned long logTimePrev = 0;
 
@@ -194,7 +194,7 @@ void readSensors() {
     sensorData.altitude = calculateAltitude();
 
   }
-  if (false) {
+  if (true) {
     Serial.print(F("pitchMeasured: ")); Serial.println(sensorData.pitch);
     Serial.print(F("rollMeasured: ")); Serial.println(sensorData.roll);
     Serial.print(F("pitch gyro: ")); Serial.println(sensorData.gyroZ);
@@ -281,15 +281,15 @@ void testPhases() {
     }
 
     if (!systemFlag.armed) {
-      ctrlData.pitchSet = 0.0;
-      ctrlData.rollSet = 0.0;
+      ctrlData.gimbalPitchAngle = 0.0;
+      ctrlData.gimbalRollAngle = 0.0;
       updateServos();
     }
 
   } else if (flightPhase == LAUNCHED) {
     // flight phase bypass
     //ctrl(0.5, 0.35, 0.3, 0.3, 0.0); working values
-    ctrl(0.5, 0.45, 0.3, 0.3, 0.0);
+    ctrl(0.45, 0.35, 0.1, 0.3, 0.0);
     updateServos();
 
   }
