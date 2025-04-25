@@ -183,7 +183,7 @@ void readSensors() {
     sensorData.altitude = calculateAltitude();
 
   }
-  if (true) {
+  if (false) {
     Serial.print(F("pitchMeasured: ")); Serial.println(sensorData.pitch);
     Serial.print(F("rollMeasured: ")); Serial.println(sensorData.roll);
     Serial.print(F("pitch gyro: ")); Serial.println(sensorData.gyroZ);
@@ -278,12 +278,12 @@ void testPhases() {
   } else if (systemFlag.flightPhase == systemFlag.LAUNCHED) {
     // flight phase bypass
     //ctrl(0.5, 0.35, 0.3, 0.3, 0.0); working values
-    ctrl(0.45, 0.35, 0.1, 0.3, 0.0);
+    ctrl(0.45, 0.15, 0.13, 0.3, 0.0);
     updateServos();
 
   }
 
-  if (true) {
+  if (false) {
     Serial.print(F("flightPhase: ")); Serial.println(systemFlag.flightPhase);
   }
 }

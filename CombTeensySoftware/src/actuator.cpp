@@ -135,7 +135,7 @@ void updateServos() {
       servoPitchAnglePrev = servoPitchAngle;
       servoRollAnglePrev = servoRollAngle;
 
-      if (true) {
+      if (false) {
         Serial.print(F("gimbal pitch: ")); Serial.println(ctrlData.gimbalPitchAngle);
         Serial.print(F("servo pitch: ")); Serial.println(servoPitchAngle);
         Serial.print(F("gimbal roll: ")); Serial.println(ctrlData.gimbalRollAngle);
