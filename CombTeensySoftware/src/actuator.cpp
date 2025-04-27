@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <wiring.h>
+#include <IntervalTimer.h>
 #include "actuator.h"
 #include "SimulatorInterface.h"
 #include "flightData.h"
@@ -106,7 +107,6 @@ void buzzer(int freq){
     digitalWrite(29, LOW);
 }
 
-
 void updateServos() {
     if (systemFlag.programMode == systemFlag.SIM) {
       simPub[0] = ctrlData.gimbalPitchAngle;
@@ -115,7 +115,8 @@ void updateServos() {
 
     } else {
       // servo specs
-      //const double maxServoChange = 0.3 * (60/0.04); // 0.04 s for 60 deg : 1500*0.3 = maxDeg pr. s
+      //const double servoSpeedLimit = 0.3 * (60/0.04); // 0.04 s for 60 deg : 1500*0.3 = maxDeg pr. s
+      //double maxChange = servoSpeedLimit * ctrlData.dt;
 
       // gear geometry in mm
       const double servoPitchRad = 7.7;
@@ -123,7 +124,7 @@ void updateServos() {
       const double servoRollRad = 7.7;
       const double gimbalRollRad = 63.0;
 
-      //double maxChange = maxServoChange * ctrlData.dt;
+
 
       // calculates servo setpoints from desired gimbal angle using physical geometry
       double servoPitchAngle = - ctrlData.gimbalPitchAngle * gimbalPitchRad / servoPitchRad;
@@ -143,16 +144,17 @@ void updateServos() {
       }
 
       // Translates the servo setpoints to PWM signals. Servos idle at 90deg
+      // sign based on orientation of servo in relation to imu
       int pitchPulse = map(constrain(90 - servoPitchAngle, 0, 180), 0, 180, 500, 2500);
       int rollPulse = map(constrain(90 + servoRollAngle, 0, 180), 0, 180, 500, 2500);
   
       // mannualy sends the PWM signal to the servos
-      digitalWrite(rollPin, HIGH);
-      delayMicroseconds(rollPulse);
-      digitalWrite(rollPin, LOW);
-
       digitalWrite(pitchPin, HIGH);
       delayMicroseconds(pitchPulse);
       digitalWrite(pitchPin, LOW);
+
+      digitalWrite(rollPin, HIGH);
+      delayMicroseconds(rollPulse);
+      digitalWrite(rollPin, LOW);
     }
   }

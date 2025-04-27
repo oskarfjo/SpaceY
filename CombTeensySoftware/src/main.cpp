@@ -264,16 +264,23 @@ void testPhases() {
     }
 
   } else if (systemFlag.flightPhase == systemFlag.LAUNCHED) {
-    // flight phase bypass
-    //ctrl(0.5, 0.35, 0.3, 0.3, 0.0); working values
-    ctrl(0.45, 0.15, 0.13, 0.3, 0.0);
-    updateServos();
+    if ((millis() - timeIgnite) >= 15000) { // 15 seconds after ignition, the system shuts off
+      logging = false;
+      systemFlag.flightPhase = systemFlag.GROUND;
+      ctrlData.gimbalPitchAngle = 0.0;
+      ctrlData.gimbalRollAngle = 0.0;
+      updateServos();
 
+    } else {
+      ctrl(0.45, 0.15, 0.13, 0.3, 0.0); 
+      updateServos();
+    }
   }
 
   if (false) {
     Serial.print(F("flightPhase: ")); Serial.println(systemFlag.flightPhase);
   }
+
 }
 
 

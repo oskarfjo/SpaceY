@@ -42,8 +42,6 @@ RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
 void updateFilterBeta(float gx, float gy, float gz);
 
-float currentBeta = 0.3;
-
 bool calInit = false;
 
 // Expected launch command
@@ -55,7 +53,7 @@ void initSensors(){
     Wire.setClock(400000);
     GPS_SERIAL.begin(GPS_BAUD);
     filter.begin(FILTER_UPDATE_RATE_HZ);
-    filter.setBeta(currentBeta);
+    filter.setBeta(sensorData.currentBeta);
 
     if (!imu.begin_I2C()){
         Serial.println("Failed to initialize ISM330DHCX!");
@@ -167,7 +165,7 @@ void readImu(){
     sensorData.roll = roll;
     sensorData.gyroX = gx;
     sensorData.gyroY = gy;
-    sensorData.gyroZ = -gz;
+    sensorData.gyroZ = -gz; // - due to position of roll servo
     sensorData.accelX = accel.acceleration.x;
     sensorData.accelY = accel.acceleration.y;
     sensorData.accelZ = accel.acceleration.z;
@@ -184,25 +182,21 @@ void readPressure(){
 }
 
 void updateFilterBeta(float gx, float gy, float gz) {
-
     // the madwickfilter needs a higher beta when the imu experiences high gyro
     // this sets an apropriate beta for the current sensorreading
 
-    // arbitrary definitions of what is high and low measurements
-    const float lowGyro = 5.0;
-    const float highGyro = 50.0;
+    // arbitrary definitions of what is considered high and low measurements
+    const float lowGyro = 20.0; // deg/s
+    const float highGyro = 100.0; // deg/s
 
     // the beta will be in the interval [minBeta, maxBeta]
     const float minBeta = 0.3;
     const float maxBeta = 0.8;
 
-    float gyroMagnitude = sqrt(
-        gx*gx + gy*gy + gz*gz
-    );
-
-    float newBeta;
+    float gyroMagnitude = sqrt(gx*gx + gy*gy + gz*gz);
 
     // calculates apropriate beta
+    float newBeta;
     if (gyroMagnitude <= lowGyro) {
         newBeta = minBeta;
     } else if (gyroMagnitude >= highGyro) {
@@ -213,10 +207,10 @@ void updateFilterBeta(float gx, float gy, float gz) {
     }
 
     // ensures smoth transition to new beta
-    currentBeta = currentBeta*0.7 + newBeta*0.3;
+    sensorData.currentBeta = sensorData.currentBeta*0.7 + newBeta*0.3;
 
-    // updates the filter
-    filter.setBeta(currentBeta);
+    // updates the AHRS filter beta
+    filter.setBeta(sensorData.currentBeta);
 }
 
 void readGps(float gpsData[10]){
