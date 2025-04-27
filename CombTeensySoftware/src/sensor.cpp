@@ -40,6 +40,10 @@ Adafruit_DPS310 bar = Adafruit_DPS310();
 Adafruit_GPS GPS(&GPS_SERIAL);
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
+void updateFilterBeta(float gx, float gy, float gz);
+
+float currentBeta = 0.3;
+
 bool calInit = false;
 
 // Expected launch command
@@ -51,7 +55,7 @@ void initSensors(){
     Wire.setClock(400000);
     GPS_SERIAL.begin(GPS_BAUD);
     filter.begin(FILTER_UPDATE_RATE_HZ);
-    filter.setBeta(0.3);
+    filter.setBeta(currentBeta);
 
     if (!imu.begin_I2C()){
         Serial.println("Failed to initialize ISM330DHCX!");
@@ -135,6 +139,9 @@ void readImu(){
     float gy = gyro.gyro.y * SENSORS_RADS_TO_DPS;
     float gz = gyro.gyro.z * SENSORS_RADS_TO_DPS;
 
+    // set appropriate filter gain
+    updateFilterBeta(gx, gy, gz);
+
     // Update the AHRS filter
     filter.update(gx, gy, gz, 
                   accel.acceleration.x, accel.acceleration.y, accel.acceleration.z, 
@@ -144,6 +151,16 @@ void readImu(){
     float roll = filter.getRoll();
     float pitch = filter.getPitch();
     float heading = filter.getYaw();
+
+    // the filter maps roll=[-180,180] which causes f.eks. 179.99... to jump to -179.99... when bicking horizontal
+    // this is a fatal flaw that should never be experienced, but it can happen with faulty sensor readings
+    // -90deg would mean straight down, so this splits the reading into either 3 or 4 quadrant of the unit circle
+    // this approach ensures that the controlsystem maxes out in the correct direction even if it passes roll<0 or roll>180
+    if (roll < 0 && roll >= -90) {
+        roll = 1;
+    } else if (roll < -90) {
+        roll = 179;
+    }
 
     sensorData.heading = heading;
     sensorData.pitch = pitch;
@@ -164,6 +181,42 @@ void readPressure(){
     sensorData.pressure = pressure_event.pressure;
     //barData[1] = temp_event.temperature;
     //barData[2] = bar.readAltitude();
+}
+
+void updateFilterBeta(float gx, float gy, float gz) {
+
+    // the madwickfilter needs a higher beta when the imu experiences high gyro
+    // this sets an apropriate beta for the current sensorreading
+
+    // arbitrary definitions of what is high and low measurements
+    const float lowGyro = 5.0;
+    const float highGyro = 50.0;
+
+    // the beta will be in the interval [minBeta, maxBeta]
+    const float minBeta = 0.3;
+    const float maxBeta = 0.8;
+
+    float gyroMagnitude = sqrt(
+        gx*gx + gy*gy + gz*gz
+    );
+
+    float newBeta;
+
+    // calculates apropriate beta
+    if (gyroMagnitude <= lowGyro) {
+        newBeta = minBeta;
+    } else if (gyroMagnitude >= highGyro) {
+        newBeta = maxBeta;
+    } else {
+        float ratio = (gyroMagnitude - lowGyro) / (highGyro - lowGyro);
+        newBeta = minBeta + ratio * (maxBeta - minBeta);
+    }
+
+    // ensures smoth transition to new beta
+    currentBeta = currentBeta*0.7 + newBeta*0.3;
+
+    // updates the filter
+    filter.setBeta(currentBeta);
 }
 
 void readGps(float gpsData[10]){
