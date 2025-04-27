@@ -35,7 +35,7 @@ void initActuator(){
 
 // Funksjon for fallskjermsystem
 void deployParachute(bool release){
-if (simData.simMode) {
+if (systemFlag.programMode == systemFlag.SIM) {
   simPub[2] = 1;
   publishSimulator(simPub, simRead);
 
@@ -67,7 +67,7 @@ void armIgnition(){
 
 // Funksjon for å antenne rakett motorer
 void ignite(){
-if (simData.simMode) {
+if (systemFlag.programMode == systemFlag.SIM) {
   simPub[3] = 1;
   publishSimulator(simPub, simRead);
 
@@ -81,7 +81,7 @@ if (simData.simMode) {
 
 // Funksjon for å resete ignition system
 void resetIgnition(){
-if (simData.simMode) {
+if (systemFlag.programMode == systemFlag.SIM) {
     simPub[3] = 0;
     publishSimulator(simPub, simRead);
 
@@ -108,7 +108,7 @@ void buzzer(int freq){
 
 
 void updateServos() {
-    if (simData.simMode) {
+    if (systemFlag.programMode == systemFlag.SIM) {
       simPub[0] = ctrlData.gimbalPitchAngle;
       simPub[1] = ctrlData.gimbalRollAngle;
       publishSimulator(simPub, simRead);
