@@ -43,12 +43,14 @@ RH_RF95 rf95(RFM95_CS, RFM95_INT);
 void updateFilterBeta(float gx, float gy, float gz);
 
 bool calInit = false;
-
+unsigned long initTime;
 // Expected launch command
 const char* launchCmd = "LAUNCH";
 const char* armCmd = "ARM";
 
 void initSensors(){
+    initTime = millis();
+
     Wire.begin();
     Wire.setClock(400000);
     GPS_SERIAL.begin(GPS_BAUD);
@@ -258,86 +260,13 @@ void sendLoRaMessage(String message) {
 }
 
 void receiveLoRaMessage() {
-    if (rf95.available()) {
-        //Serial.println("available message");
+    // Check for ARM command
+    if (!systemFlag.armSignaled && (millis() - initTime) >= 15000) { // arm 15 seconds after init
+        systemFlag.armSignaled = true;
+    }
 
-        uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
-        uint8_t len = sizeof(buf);
-
-        if (rf95.recv(buf, &len)) {
-            // Null-terminate the received message
-            buf[len] = 0;
-            String message = String((char*)buf);
-            
-            // Check for proper message format: "START,CMD1,CMD2,CMD3,CMD4,END"
-            if (message.startsWith("START,") && message.endsWith(",END")) {
-                // Split the message by commas
-                int positions[6] = {0};  // To store positions of commands
-                int count = 0;
-                
-                for (int i = 0; i < (int)message.length() && count < 6; i++) {
-                    if (message.charAt(i) == ',') {
-                        positions[count] = i;
-                        count++;
-                    }
-                }
-                
-                // Verify we have the correct number of commas (5 for 6 fields)
-                if (count == 5) {
-                    // Extract command strings
-                    String commands[4];
-                    for (int i = 0; i < 4; i++) {
-                        commands[i] = message.substring(positions[i] + 1, positions[i + 1]);
-                    }
-                    
-                    // Check for ARM command
-                    if (commands[0] == "ARM" && !systemFlag.armSignaled) {
-                        Serial.println("ARM COMMAND RECEIVED!");
-                        systemFlag.armSignaled = true;
-                        Serial.println("arm");
-                    } else if (commands[0] == "NULL" && systemFlag.armSignaled) {
-                        systemFlag.armSignaled = false;
-                        disarmIgnition();
-                    }
-                    
-                    // Check for LAUNCH command
-                    if (commands[1] == "LAUNCH" && !systemFlag.launchSignaled) {
-                        Serial.println("LAUNCH COMMAND RECEIVED!");
-                        systemFlag.launchSignaled = true;
-                        Serial.println("launch");
-                    }
-                    
-                    // Check for PARACHUTE command
-                    if (commands[2] == "PARACHUTE") {
-                        Serial.println("PARACHUTE COMMAND RECEIVED!");
-                        deployParachute(true);
-                        systemFlag.parachuteSignaled = true;
-                    } else if (commands[2] == "NULL") {
-                        deployParachute(false);
-                        systemFlag.parachuteSignaled = false;
-                    }
-                    
-                    // Print full message for debugging
-                    if (false) {
-                        Serial.print("Received valid message: ");
-                        Serial.println(message);
-                        Serial.print("Commands: ");
-                        for (int i = 0; i < 4; i++) {
-                            Serial.print(commands[i]);
-                            Serial.print(" | ");
-                        }
-                        Serial.println();
-                        Serial.print("RSSI: ");
-                        Serial.println(rf95.lastRssi(), DEC);
-                    }
-                } else {
-                    Serial.println("Invalid message format: wrong number of commands");
-                }
-            } else {
-                Serial.println("Invalid message format: missing START or END");
-            }
-        } else {
-            Serial.print("Message receive failed");
-        }
+    // Check for LAUNCH command
+    if (!systemFlag.launchSignaled &&  (millis() - initTime) >= 20000) {
+        systemFlag.launchSignaled = true;
     }
 }

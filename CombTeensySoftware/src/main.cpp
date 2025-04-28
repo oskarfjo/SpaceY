@@ -87,34 +87,13 @@ void loop() {
 
   readSensors();
 
-  if (false && !(systemFlag.programMode == systemFlag.SIM)) {
-    reciever(100); // reads LoRa at 10Hz
-  }
+  reciever(100); // reads LoRa at 10Hz
 
-  if (!systemFlag.parachuteSignaled) {
-    if (systemFlag.programMode == systemFlag.LAB) {
-      testPhases();
-    } else {
-      flightPhases();
-    }
-  } else {
-    gimbalTest();
-  }
-
+  flightPhases();
 
   if (systemFlag.flightPhase == systemFlag.LAUNCHED && (millis() - timeIgnite) >= 1000) {
     // resets ignition 1 second after launch
     resetIgnition();
-  }
-
-  if (systemFlag.armed && !systemFlag.launchSignaled) {
-    // makes a distinct noise when armed
-    buzzer(armedSound);
-    if (armedSound < 500) {
-      armedSound += 1;
-    } else {
-      armedSound = 200;
-    }
   }
 
   if ((timeCur - logTimePrev >= logInterval) && logging) {
@@ -194,14 +173,19 @@ void flightPhases() {
 
   if (systemFlag.flightPhase == systemFlag.LAUNCHED || systemFlag.flightPhase == systemFlag.FLIGHT) {
     // rocket is ascending
-    ctrl(0.5, 0.35, 0.0, 0.3, 0.0);
-    updateServos();
+    if ((millis() - timeIgnite) <= 1000) {
+      ctrl(0.05, 0.01, 0.0, 0.3, 0.0);
+      updateServos();
+    } else {
+      ctrl(0.45, 0.15, 0.13, 0.3, 0.0);
+      updateServos();
+    }
   }
 
   if (systemFlag.flightPhase == systemFlag.PREEFLIGHT) {
     // rocket has not yet launched
     if (systemFlag.armed) { // ensures correct angle at lauch
-      ctrl(0.5, 0.0, 0.0, 0.0, 0.0);
+      ctrl(0.05, 0.01, 0.0, 0.3, 0.0);
       updateServos();  
     }
     
