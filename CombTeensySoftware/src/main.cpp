@@ -20,6 +20,7 @@ void flightPhases();
 void testPhases();
 void gimbalTest();
 void reciever(unsigned long interval);
+void receiveLoRaMessage();
 
 // coms bool
 int armedSound = 200;
@@ -42,6 +43,8 @@ unsigned long timeIgnite = 0;
 bool logging = false;
 const unsigned long logInterval = 100; // ms
 unsigned long logTimePrev = 0;
+
+unsigned long initTime;
 
 // SIMULATOR //
 float simRead[12];
@@ -70,6 +73,8 @@ void setup() {
     calibrateSensors();
   }
 
+  initTime = millis();
+  
   // init prev values
   timePrev = micros();
 }
@@ -301,5 +306,17 @@ void reciever(unsigned long interval) {
   if (now - lastMessageTime >= interval) {
     lastMessageTime = now;
     receiveLoRaMessage();
+  }
+}
+
+void receiveLoRaMessage() {
+  // Check for ARM command
+  if (!systemFlag.armSignaled && (millis() - initTime) >= 15000) { // arm 15 seconds after init
+      systemFlag.armSignaled = true;
+  }
+
+  // Check for LAUNCH command
+  if (!systemFlag.launchSignaled &&  (millis() - initTime) >= 20000) {
+      systemFlag.launchSignaled = true;
   }
 }
