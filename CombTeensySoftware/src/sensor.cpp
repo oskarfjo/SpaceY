@@ -43,13 +43,11 @@ RH_RF95 rf95(RFM95_CS, RFM95_INT);
 void updateFilterBeta(float gx, float gy, float gz);
 
 bool calInit = false;
-unsigned long initTime;
 // Expected launch command
 const char* launchCmd = "LAUNCH";
 const char* armCmd = "ARM";
 
 void initSensors(){
-    initTime = millis();
 
     Wire.begin();
     Wire.setClock(400000);
@@ -259,14 +257,3 @@ void sendLoRaMessage(String message) {
     Serial.println("Message sent!");  
 }
 
-void receiveLoRaMessage() {
-    // Check for ARM command
-    if (!systemFlag.armSignaled && (millis() - initTime) >= 15000) { // arm 15 seconds after init
-        systemFlag.armSignaled = true;
-    }
-
-    // Check for LAUNCH command
-    if (!systemFlag.launchSignaled &&  (millis() - initTime) >= 20000) {
-        systemFlag.launchSignaled = true;
-    }
-}

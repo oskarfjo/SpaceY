@@ -16,6 +16,9 @@ int pitchPin = 2;
 int rollPin = 3;
 
 void initActuator(){
+  if(systemFlag.programMode == systemFlag.SIM){
+    return; // nothing to setup, lmao sad :( 
+  }else{
     pinMode(pitchPin, OUTPUT);
     pinMode(rollPin, OUTPUT);
     pinMode(parachutePin, OUTPUT);
@@ -32,6 +35,7 @@ void initActuator(){
     digitalWrite(27, LOW);
 
     pinMode(29, OUTPUT); // Buzzer
+  }
 }
 
 // Funksjon for fallskjermsystem
@@ -62,8 +66,13 @@ if (systemFlag.programMode == systemFlag.SIM) {
 
 // Funksjon for å arme ignition
 void armIgnition(){
+  if (systemFlag.programMode == systemFlag.SIM){
+    systemFlag.armed = true;
+    Serial.println("Armed");
+  }else{
     digitalWrite(28, HIGH);
     systemFlag.armed = true;
+  }
 }
 
 // Funksjon for å antenne rakett motorer
@@ -71,6 +80,7 @@ void ignite(){
 if (systemFlag.programMode == systemFlag.SIM) {
   simPub[3] = 1;
   publishSimulator(simPub, simRead);
+  Serial.println("Ignited");
 
   } else {
     digitalWrite(24, HIGH);
@@ -96,8 +106,12 @@ if (systemFlag.programMode == systemFlag.SIM) {
 }
 
 void disarmIgnition() {
-  digitalWrite(28, LOW);
-  systemFlag.armed = false;
+  if (systemFlag.programMode == systemFlag.SIM){
+    systemFlag.armed = false;
+  }else{
+    digitalWrite(28, LOW);
+    systemFlag.armed = false;
+  }
 }
 
 // Funksjon for å lage buzzer lyder

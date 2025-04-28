@@ -8,6 +8,5 @@ void readImu();
 void readPressure();
 void readGps(float gpsData[10]);
 void sendLoRaMessage(String message);
-void receiveLoRaMessage();
 
 #endif
