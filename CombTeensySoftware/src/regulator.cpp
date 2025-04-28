@@ -9,6 +9,10 @@ const double MAX_P_CONTRIBUTION = gimbalLim;
 const double MAX_I_CONTRIBUTION = 0.5*gimbalLim;
 const double MAX_D_CONTRIBUTION = 0.8*gimbalLim;
 
+double kp;
+double ki;
+double kd;
+
 double requiredForceEstimator(double currentAngle, double currentVelocity, double desiredAngle) {
     // Simplified physical model for andreas' required-force-estimation (pat pending) //
 
@@ -54,7 +58,7 @@ double requiredForceEstimator(double currentAngle, double currentVelocity, doubl
 }
 
 
-void ctrl(double kp, double ki, double kd, double dGain, double reqGain) {
+void ctrl(double kpSet, double kiSet, double kdSet, double dGain, double reqGain) {
   
     // constants //
     /*
@@ -65,6 +69,12 @@ void ctrl(double kp, double ki, double kd, double dGain, double reqGain) {
     double dGain = 0.3;
     double reqGain = 0.0;
     */
+
+    double pidValsGain = 0.1;
+
+    kp = kp*(1-pidValsGain) + kpSet*pidValsGain;
+    ki = ki*(1-pidValsGain) + kiSet*pidValsGain;
+    kd = kd*(1-pidValsGain) + kdSet*pidValsGain;
 
     // P //
     double pitchError = ctrlData.pitchSet - sensorData.pitch;

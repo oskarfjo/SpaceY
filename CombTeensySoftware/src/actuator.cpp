@@ -138,9 +138,9 @@ void updateServos() {
 
       if (false) {
         Serial.print(F("gimbal pitch: ")); Serial.println(ctrlData.gimbalPitchAngle);
-        Serial.print(F("servo pitch: ")); Serial.println(servoPitchAngle);
+        //Serial.print(F("servo pitch: ")); Serial.println(servoPitchAngle);
         Serial.print(F("gimbal roll: ")); Serial.println(ctrlData.gimbalRollAngle);
-        Serial.print(F("servo roll: ")); Serial.println(servoRollAngle);
+        //Serial.print(F("servo roll: ")); Serial.println(servoRollAngle);
       }
 
       // Translates the servo setpoints to PWM signals. Servos idle at 90deg

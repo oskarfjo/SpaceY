@@ -139,7 +139,7 @@ void readImu(){
 
     // set appropriate filter gain
     updateFilterBeta(gx, gy, gz);
-
+    
     // Update the AHRS filter
     filter.update(gx, gy, gz, 
                   accel.acceleration.x, accel.acceleration.y, accel.acceleration.z, 
@@ -169,6 +169,9 @@ void readImu(){
     sensorData.accelX = accel.acceleration.x;
     sensorData.accelY = accel.acceleration.y;
     sensorData.accelZ = accel.acceleration.z;
+
+    //Serial.print("beta: "); Serial.print(sensorData.currentBeta);
+    //Serial.print(sensorData.currentBeta);Serial.print(",");Serial.println(roll);
 }
 
 void readPressure(){
@@ -206,8 +209,15 @@ void updateFilterBeta(float gx, float gy, float gz) {
         newBeta = minBeta + ratio * (maxBeta - minBeta);
     }
 
+    float alpha;
+    if (systemFlag.flightPhase == systemFlag.LAUNCHED) {
+        alpha = 0.3;
+    } else {
+        alpha = 0.05;
+    }
+
     // ensures smoth transition to new beta
-    sensorData.currentBeta = sensorData.currentBeta*0.7 + newBeta*0.3;
+    sensorData.currentBeta = sensorData.currentBeta * (1-alpha) + newBeta*alpha;
 
     // updates the AHRS filter beta
     filter.setBeta(sensorData.currentBeta);
@@ -301,8 +311,10 @@ void receiveLoRaMessage() {
                     if (commands[2] == "PARACHUTE") {
                         Serial.println("PARACHUTE COMMAND RECEIVED!");
                         deployParachute(true);
+                        systemFlag.parachuteSignaled = true;
                     } else if (commands[2] == "NULL") {
                         deployParachute(false);
+                        systemFlag.parachuteSignaled = false;
                     }
                     
                     // Print full message for debugging

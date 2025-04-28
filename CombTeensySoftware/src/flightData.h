@@ -25,6 +25,7 @@ struct Flags
     bool armed = false;
     bool launchSignaled = false;
     bool armSignaled = false;
+    bool parachuteSignaled = false;
 
     enum FlightPhase {
         PREEFLIGHT = 0,

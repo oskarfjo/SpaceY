@@ -34,7 +34,7 @@ void initLog() {
       return;
     }
     if (storedData.fileSize() == 0) {
-      storedData.println("Time(s), dt, flightPhase, altitude, pitchMeasured, rollMeasured, pitchGimbal, rollGimbal, pitchError, rollError"); // headers at the top csv
+      storedData.println("Time(s), dt, flightPhase, altitude, pitchMeasured, rollMeasured, pitchGyro, rollGyro, pitchGimbal, rollGimbal, pitchError, rollError"); // headers at the top csv
       storedData.flush();
     }
   }
@@ -49,8 +49,8 @@ void initLog() {
     unsigned long timeSeconds = millis()/1000;
   
     snprintf(logBuffer[logBufferCount], 128,
-             "%lu,%.5f,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
-             timeSeconds, ctrlData.dt, systemFlag.flightPhase, sensorData.altitude, sensorData.pitch, sensorData.roll, ctrlData.gimbalPitchAngle,
+             "%lu,%.5f,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
+             timeSeconds, ctrlData.dt, systemFlag.flightPhase, sensorData.altitude, sensorData.pitch, sensorData.roll, sensorData.gyroZ, sensorData.gyroX, ctrlData.gimbalPitchAngle,
              ctrlData.gimbalRollAngle, ctrlData.pitchError, ctrlData.rollError);
   
     logBufferCount++;

@@ -18,6 +18,7 @@ void readSensors();
 void calibrateSensors();
 void flightPhases();
 void testPhases();
+void gimbalTest();
 void reciever(unsigned long interval);
 
 // coms bool
@@ -45,6 +46,9 @@ unsigned long logTimePrev = 0;
 // SIMULATOR //
 float simRead[12];
 
+// gimbal oscillator //
+int pitchSign = 1;
+int rollSign = 1;
 
 //////////
 // INIT //
@@ -87,10 +91,14 @@ void loop() {
     reciever(100); // reads LoRa at 10Hz
   }
 
-  if (systemFlag.programMode == systemFlag.LAB) {
-    testPhases();
+  if (!systemFlag.parachuteSignaled) {
+    if (systemFlag.programMode == systemFlag.LAB) {
+      testPhases();
+    } else {
+      flightPhases();
+    }
   } else {
-    flightPhases();
+    gimbalTest();
   }
 
 
@@ -253,7 +261,7 @@ void testPhases() {
     } else if (systemFlag.armSignaled && !systemFlag.armed) {
       armIgnition();
     } else if (systemFlag.armed) {
-      ctrl(0.5, 0.0, 0.0, 0.0, 0.0);
+      ctrl(0.1, 0.0, 0.0, 0.0, 0.0);
       updateServos();
     }
 
@@ -264,13 +272,16 @@ void testPhases() {
     }
 
   } else if (systemFlag.flightPhase == systemFlag.LAUNCHED) {
-    if ((millis() - timeIgnite) >= 15000) { // 15 seconds after ignition, the system shuts off
+    if ((millis() - timeIgnite) >= 30000) { // 30 seconds after ignition, the system shuts off
       logging = false;
       systemFlag.flightPhase = systemFlag.GROUND;
       ctrlData.gimbalPitchAngle = 0.0;
       ctrlData.gimbalRollAngle = 0.0;
       updateServos();
 
+    } else if ((millis() - timeIgnite) <= 1000) { // small pidVals during the first second
+      ctrl(0.05, 0.01, 0.0, 0.3, 0.0);
+      updateServos();
     } else {
       ctrl(0.45, 0.15, 0.13, 0.3, 0.0); 
       updateServos();
@@ -281,6 +292,22 @@ void testPhases() {
     Serial.print(F("flightPhase: ")); Serial.println(systemFlag.flightPhase);
   }
 
+}
+
+void gimbalTest() {
+  double step = 0.05;
+
+  if (abs(ctrlData.gimbalPitchAngle) >= gimbalLim) {
+    pitchSign *= -1; 
+  }
+
+  if (abs(ctrlData.gimbalRollAngle) >= gimbalLim) {
+    rollSign *= -1;
+  }
+
+  ctrlData.gimbalRollAngle += step*rollSign;
+  ctrlData.gimbalPitchAngle += step*pitchSign;
+  updateServos();
 }
 
 
