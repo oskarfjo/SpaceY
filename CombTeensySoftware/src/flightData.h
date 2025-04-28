@@ -42,7 +42,7 @@ struct Flags
         SIM = 2,
     };
       
-    ProgramMode programMode = LAB;
+    ProgramMode programMode = SIM;
 
     FlightPhase flightPhase = PREEFLIGHT;
 };

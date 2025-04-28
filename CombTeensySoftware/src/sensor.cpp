@@ -13,7 +13,7 @@
 #include <SPI.h>
 #include <RH_RF95.h>
 
-#define GPS_SERIAL Serial8
+#define GPS_SERIAL Serial3
 #define GPS_BAUD 9600
 
 #define RFM95_RST   9 // RST PIN

@@ -39,7 +39,7 @@ unsigned long timePrev = 0;
 unsigned long timeIgnite = 0;
 
 // Logging //
-bool logging = true;
+bool logging = false;
 const unsigned long logInterval = 100; // ms
 unsigned long logTimePrev = 0;
 
