@@ -31,10 +31,16 @@ void processSerialData(char *message, float simRead[12]) {
             0=gx    1=gy    2=gz    3=acc.x     4=acc.y     5=acc.z     6=mag.x     7=mag.y     8=mag.z     9=air pressure
             */
 
+            float roll = sim_filter.getRoll();
+            if (roll < 0 && roll >= -90) {
+                roll = 1;
+            } else if (roll < -90) {
+                roll = 179;
+            }
             // Store processed values in simRead
             simRead[0] = sim_filter.getYaw();
             simRead[1] = sim_filter.getPitch();
-            simRead[2] = sim_filter.getRoll();
+            simRead[2] = roll;
             simRead[3] = values[0];
             simRead[4] = values[2];
             simRead[5] = values[9]; // Air pressure
