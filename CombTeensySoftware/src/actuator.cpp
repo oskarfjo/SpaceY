@@ -68,7 +68,6 @@ if (systemFlag.programMode == systemFlag.SIM) {
 void armIgnition(){
   if (systemFlag.programMode == systemFlag.SIM){
     systemFlag.armed = true;
-    Serial.println("Armed");
   }else{
     digitalWrite(28, HIGH);
     systemFlag.armed = true;
@@ -80,7 +79,6 @@ void ignite(){
 if (systemFlag.programMode == systemFlag.SIM) {
   simPub[3] = 1;
   publishSimulator(simPub, simRead);
-  Serial.println("Ignited");
 
   } else {
     digitalWrite(24, HIGH);
@@ -93,8 +91,9 @@ if (systemFlag.programMode == systemFlag.SIM) {
 // Funksjon for å resete ignition system
 void resetIgnition(){
 if (systemFlag.programMode == systemFlag.SIM) {
-    simPub[3] = 0;
-    publishSimulator(simPub, simRead);
+    //simPub[3] = 0;
+    //publishSimulator(simPub, simRead);
+    return;
 
   } else {
     digitalWrite(28, LOW);

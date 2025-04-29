@@ -302,21 +302,20 @@ void gimbalTest() {
 
 void reciever(unsigned long interval) {
   // fetches LoRa messages at a set interval in milliseconds
-  unsigned long now = millis();
-  if (now - lastMessageTime >= interval) {
-    lastMessageTime = now;
+  if (millis() - lastMessageTime >= interval) {
     receiveLoRaMessage();
+    lastMessageTime = millis();
   }
 }
 
 void receiveLoRaMessage() {
   // Check for ARM command
-  if (!systemFlag.armSignaled && (millis() - initTime) >= 15000) { // arm 15 seconds after init
+  if (!systemFlag.armSignaled && (millis() - initTime) >= 20000) { // arm 15 seconds after init
       systemFlag.armSignaled = true;
   }
 
   // Check for LAUNCH command
-  if (!systemFlag.launchSignaled &&  (millis() - initTime) >= 20000) {
+  if (!systemFlag.launchSignaled &&  (millis() - initTime) >= 25000) {
       systemFlag.launchSignaled = true;
   }
 }
