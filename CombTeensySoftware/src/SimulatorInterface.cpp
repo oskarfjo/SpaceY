@@ -1,13 +1,16 @@
 #include <Arduino.h>
 #include <Adafruit_AHRS.h>
 #include "SimulatorInterface.h"
+#include "flightData.h"
 
 Adafruit_Madgwick sim_filter;
+
+void updateFilterBeta(float gx, float gy, float gz);
 
 void initSimulatorinterface(){
     Serial.begin(115200);
     sim_filter.begin(100);
-    sim_filter.setBeta(0.3);
+    sim_filter.setBeta(sensorData.currentBeta);
     while (!Serial) { delay(10); }  // Wait for serial connection
     Serial.println("Teensy is ready");
 }
@@ -24,6 +27,8 @@ void processSerialData(char *message, float simRead[12]) {
         }
 
         if (i == 10) {
+            updateFilterBeta(values[0], values[1], values[2]);
+            sim_filter.setBeta(sensorData.currentBeta);
             // Update AHRS filter with new IMU data
             sim_filter.update(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8]);
             /*
@@ -51,6 +56,44 @@ void processSerialData(char *message, float simRead[12]) {
     }
 }
 
+void updateFilterBeta(float gx, float gy, float gz) {
+    // the madwickfilter needs a higher beta when the imu experiences high gyro
+    // this sets an apropriate beta for the current sensorreading
+
+    // arbitrary definitions of what is considered high and low measurements
+    const float lowGyro = 20.0; // deg/s
+    const float highGyro = 100.0; // deg/s
+
+    // the beta will be in the interval [minBeta, maxBeta]
+    const float minBeta = 0.3;
+    const float maxBeta = 0.8;
+
+    float gyroMagnitude = sqrt(gx*gx + gy*gy + gz*gz);
+
+    // calculates apropriate beta
+    float newBeta;
+    if (gyroMagnitude <= lowGyro) {
+        newBeta = minBeta;
+    } else if (gyroMagnitude >= highGyro) {
+        newBeta = maxBeta;
+    } else {
+        float ratio = (gyroMagnitude - lowGyro) / (highGyro - lowGyro);
+        newBeta = minBeta + ratio * (maxBeta - minBeta);
+    }
+
+    float alpha;
+    if (systemFlag.flightPhase == systemFlag.LAUNCHED) {
+        alpha = 0.3;
+    } else {
+        alpha = 0.05;
+    }
+
+    // ensures smoth transition to new beta
+    sensorData.currentBeta = sensorData.currentBeta * (1-alpha) + newBeta*alpha;
+
+    // updates the AHRS filter beta
+    sim_filter.setBeta(sensorData.currentBeta);
+}
 
 
 void readSimulator(float simRead[12]) {
