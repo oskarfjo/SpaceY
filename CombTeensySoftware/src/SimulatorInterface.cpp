@@ -5,7 +5,7 @@
 
 Adafruit_Madgwick sim_filter;
 
-void updateFilterBeta(float gx, float gy, float gz);
+void updateBeta(float gx, float gy, float gz);
 
 void initSimulatorinterface(){
     Serial.begin(115200);
@@ -27,7 +27,7 @@ void processSerialData(char *message, float simRead[12]) {
         }
 
         if (i == 10) {
-            updateFilterBeta(values[0], values[1], values[2]);
+            updateBeta(values[0], values[1], values[2]);
             sim_filter.setBeta(sensorData.currentBeta);
             // Update AHRS filter with new IMU data
             sim_filter.update(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8]);
@@ -56,7 +56,7 @@ void processSerialData(char *message, float simRead[12]) {
     }
 }
 
-void updateFilterBeta(float gx, float gy, float gz) {
+void updateBeta(float gx, float gy, float gz) {
     // the madwickfilter needs a higher beta when the imu experiences high gyro
     // this sets an apropriate beta for the current sensorreading
 
