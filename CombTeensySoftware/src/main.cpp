@@ -182,7 +182,7 @@ void flightPhases() {
       ctrl(0.05, 0.01, 0.0, 0.3, 0.0);
       updateServos();
     } else {
-      ctrl(0.45, 0.15, 0.13, 0.3, 0.0);
+      ctrl(0.9, 0.3, 0.26, 0.3, 0.0);
       updateServos();
     }
   }
