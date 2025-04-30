@@ -310,12 +310,12 @@ void reciever(unsigned long interval) {
 
 void receiveLoRaMessage() {
   // Check for ARM command
-  if (!systemFlag.armSignaled && (millis() - initTime) >= 20000) { // arm 15 seconds after init
+  if (!systemFlag.armSignaled && (millis() - initTime) >= 25000) { // arm 15 seconds after init
       systemFlag.armSignaled = true;
   }
 
   // Check for LAUNCH command
-  if (!systemFlag.launchSignaled &&  (millis() - initTime) >= 25000) {
+  if (!systemFlag.launchSignaled &&  (millis() - initTime) >= 35000) {
       systemFlag.launchSignaled = true;
   }
 }
