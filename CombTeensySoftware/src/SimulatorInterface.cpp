@@ -46,8 +46,8 @@ void processSerialData(char *message, float simRead[12]) {
             simRead[0] = sim_filter.getYaw();
             simRead[1] = sim_filter.getPitch();
             simRead[2] = roll;
-            simRead[3] = values[0];
-            simRead[4] = values[2];
+            simRead[3] = values[0]; // Gyro x
+            simRead[4] = values[2]; // Gyro z
             simRead[5] = values[9]; // Air pressure
 
             // Send IMU data over Serial to ROS 2
@@ -154,8 +154,8 @@ void publishSimulator(float simPub[4], float simRead[12]){
     float RadServo1 = (simPub[1] * 71) / 4068;
     char pubmsg[100];
     snprintf(pubmsg, sizeof(pubmsg),
-        "FULL,%.4f,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
-        RadServo0, RadServo1, simPub[2], simPub[3], simRead[0], simRead[1], simRead[2], simRead[5]);
-
+        "FULL,%.4f,%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
+        RadServo0, RadServo1, simPub[2], simPub[3], simRead[0], simRead[1], simRead[2], simRead[3], simRead[4], simRead[5]);
+        // SERVO_PITCH, SERVO_ROLL, PARACHUTE, IGNITION, YAW, PITCH, ROLL, GYRO_X, GYRO_Z, PRESSURE
     Serial.println(pubmsg);
 }

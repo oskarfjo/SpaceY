@@ -15,7 +15,7 @@ struct SensorData
     float accelZ;
 
     float altitude = 0.0;
-    float altitudeMax = 0.0;
+    float altitudeMax = 15.0;
 
     float currentBeta = 0.3; // dynamic madwick beta
 };

@@ -40,10 +40,14 @@ void initActuator(){
 
 // Funksjon for fallskjermsystem
 void deployParachute(bool release){
-if (systemFlag.programMode == systemFlag.SIM) {
+if (systemFlag.programMode == systemFlag.SIM && release) {
   simPub[2] = 1;
   publishSimulator(simPub, simRead);
 
+  } else if (systemFlag.programMode == systemFlag.SIM && !release) {
+    simPub[2] = 0;
+    publishSimulator(simPub, simRead);
+  
   } else {
     double parachuteLockAngle = 90; // deg
     double parachuteOpenAngle = 180; // deg

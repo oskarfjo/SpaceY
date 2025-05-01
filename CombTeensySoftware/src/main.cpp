@@ -65,6 +65,8 @@ void setup() {
   }
 
   if (systemFlag.programMode == systemFlag.SIM) {
+    readSimulator(simRead);
+    sensorData.altitude = relativeAltitude(101324.31);
     initSimulatorinterface();
   } else {
     Serial.begin(115200);
@@ -146,13 +148,13 @@ void readSensors() {
     readSimulator(simRead);
 
     sensorData.pressure = simRead[5];
-    sensorData.altitude = relativeAltitude(simRead[5]);
+    sensorData.altitude = relativeAltitude(sensorData.pressure);
 
     sensorData.pitch = simRead[1];
     sensorData.roll = simRead[2];
 
-    sensorData.gyroZ = simRead[4];
-    sensorData.gyroX = -simRead[3];
+    sensorData.gyroZ = -simRead[4];
+    sensorData.gyroX = simRead[3];
 
   } else {
     // fetches the latest sensor data
@@ -179,10 +181,10 @@ void flightPhases() {
   if (systemFlag.flightPhase == systemFlag.LAUNCHED || systemFlag.flightPhase == systemFlag.FLIGHT) {
     // rocket is ascending
     if ((millis() - timeIgnite) <= 1000) {
-      ctrl(0.05, 0.01, 0.0, 0.3, 0.0);
+      ctrl(0.25, 0.06, 0.07, 0.3, 0.0);
       updateServos();
     } else {
-      ctrl(0.56, 0.19, 0.16, 0.3, 0.0);
+      ctrl(0.8, 0.15, 0.17, 0.3, 0.0);
       updateServos();
     }
   }
@@ -190,7 +192,7 @@ void flightPhases() {
   if (systemFlag.flightPhase == systemFlag.PREEFLIGHT) {
     // rocket has not yet launched
     if (systemFlag.armed) { // ensures correct angle at lauch
-      ctrl(0.05, 0.01, 0.0, 0.3, 0.0);
+      ctrl(0.25, 0.06, 0.7, 0.3, 0.0);
       updateServos();  
     }
     
@@ -203,7 +205,7 @@ void flightPhases() {
       armIgnition();
     }
 
-  } else if (systemFlag.flightPhase == systemFlag.LAUNCHED && sensorData.altitude >= 10.0) {
+  } else if (systemFlag.flightPhase == systemFlag.LAUNCHED && sensorData.altitude >= 15.0) {
     // rocket is in stable flight
     systemFlag.flightPhase = systemFlag.FLIGHT;
   
@@ -211,7 +213,7 @@ void flightPhases() {
     // rocket is ascending
     sensorData.altitudeMax = sensorData.altitude;
 
-  } else if (systemFlag.flightPhase == systemFlag.FLIGHT && (sensorData.altitude + 0.5) < sensorData.altitudeMax) {
+  } else if (systemFlag.flightPhase == systemFlag.FLIGHT && (sensorData.altitude + 0.5) <= sensorData.altitudeMax) {
     // rocket has reached its apogee and starts freefall
     systemFlag.flightPhase = systemFlag.APOGEE;
 
