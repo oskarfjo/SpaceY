@@ -196,13 +196,10 @@ void readImu(){
     sensorData.roll = roll;
     sensorData.gyroX = gx;
     sensorData.gyroY = gy;
-    sensorData.gyroZ = -gz; // - due to position of roll servo
+    sensorData.gyroZ = -gz; // - due to position of imu
     sensorData.accelX = accel.acceleration.x;
     sensorData.accelY = accel.acceleration.y;
     sensorData.accelZ = accel.acceleration.z;
-
-    //Serial.print("beta: "); Serial.print(sensorData.currentBeta);
-    //Serial.print(sensorData.currentBeta);Serial.print(",");Serial.println(roll);
 }
 
 void readPressure(){

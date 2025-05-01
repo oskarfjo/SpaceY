@@ -48,6 +48,8 @@ float simRead[12];
 // gimbal oscillator //
 int pitchSign = 1;
 int rollSign = 1;
+int gimbalTestPass = 0;
+bool gimbalTestMode = false;
 
 //////////
 // INIT //
@@ -85,20 +87,17 @@ void loop() {
   // NB! averag dt = 0.006s, but when logData() is run the system slows to dt = 0.015s for that loop
 
   readSensors();
+  
 
-  if (false && !(systemFlag.programMode == systemFlag.SIM)) {
-    reciever(100); // reads LoRa at 10Hz
-  }
-
-  if (!systemFlag.parachuteSignaled) {
-    if (systemFlag.programMode == systemFlag.LAB) {
-      testPhases();
-    } else {
-      flightPhases();
-    }
-  } else {
+ 
+  if (false) { // true for gimbal mechanical test
     gimbalTest();
+  } else if (systemFlag.programMode == systemFlag.LAB) {
+      testPhases();
+  } else {
+      flightPhases();
   }
+
 
 
   if (systemFlag.flightPhase == systemFlag.LAUNCHED && (millis() - timeIgnite) >= 1000) {
@@ -299,16 +298,28 @@ void testPhases() {
 void gimbalTest() {
   double step = 0.05;
 
-  if (abs(ctrlData.gimbalPitchAngle) >= gimbalLim) {
-    pitchSign *= -1; 
-  }
-
-  if (abs(ctrlData.gimbalRollAngle) >= gimbalLim) {
-    rollSign *= -1;
-  }
-
+  if (gimbalTestMode) {
+    if (abs(ctrlData.gimbalPitchAngle) >= gimbalLim) {
+      pitchSign *= -1;
+      gimbalTestPass += 1;
+    }
+    ctrlData.gimbalPitchAngle += step*pitchSign;
+  } else {
+    if (abs(ctrlData.gimbalRollAngle) >= gimbalLim) {
+      rollSign *= -1;
+      gimbalTestPass += 1;
+    }
   ctrlData.gimbalRollAngle += step*rollSign;
-  ctrlData.gimbalPitchAngle += step*pitchSign;
+  }
+
+  if ((gimbalTestPass >= 2 && abs(ctrlData.gimbalPitchAngle) <= 0.1 && gimbalTestMode) ||
+      (gimbalTestPass >= 2 && abs(ctrlData.gimbalRollAngle) <= 0.1 && !gimbalTestMode)) {
+    gimbalTestMode = !gimbalTestMode;
+    gimbalTestPass = 0;
+    ctrlData.gimbalPitchAngle = 0.0;
+    ctrlData.gimbalRollAngle = 0.0;
+  }
+
   updateServos();
 }
 
