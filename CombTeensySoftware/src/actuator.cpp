@@ -124,8 +124,6 @@ void updateServos() {
       const double servoRollRad = 7.7;
       const double gimbalRollRad = 63.0;
 
-
-
       // calculates servo setpoints from desired gimbal angle using physical geometry
       double servoPitchAngle = - ctrlData.gimbalPitchAngle * gimbalPitchRad / servoPitchRad;
       double servoRollAngle = - ctrlData.gimbalRollAngle * gimbalRollRad / servoRollRad;

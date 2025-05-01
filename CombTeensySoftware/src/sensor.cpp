@@ -137,6 +137,25 @@ void readImu(){
     float gy = gyro.gyro.y * SENSORS_RADS_TO_DPS;
     float gz = gyro.gyro.z * SENSORS_RADS_TO_DPS;
 
+    if (true) {
+    Serial.println(F("Gyro data [gx,gy,gz]: "));
+    Serial.println(gx);
+    Serial.println(gy);
+    Serial.println(gz);
+    Serial.println(F(""));
+    Serial.println(F("Mag data [mx,my,mz]: "));
+    Serial.println(mag_data.magnetic.x);
+    Serial.println(mag_data.magnetic.y);
+    Serial.println(mag_data.magnetic.z);
+    Serial.println(F(""));
+    Serial.println(F("Accel data [ax,ay,az]: "));
+    Serial.println(accel.acceleration.x);
+    Serial.println(accel.acceleration.y);
+    Serial.println(accel.acceleration.z);
+    Serial.println(F(""));
+    Serial.println(F("---------------"));
+    Serial.println(F(""));
+    }
     // set appropriate filter gain
     updateFilterBeta(gx, gy, gz);
     
@@ -145,10 +164,22 @@ void readImu(){
                   accel.acceleration.x, accel.acceleration.y, accel.acceleration.z, 
                   mag_data.magnetic.x, mag_data.magnetic.y, mag_data.magnetic.z);
     
-    // Print the heading (yaw), pitch, and roll
+    // Get the heading (yaw), pitch, and roll
     float roll = filter.getRoll();
     float pitch = filter.getPitch();
     float heading = filter.getYaw();
+
+    if (true) {
+        Serial.println(F("MADWICK VALS"));
+        Serial.print(F("Filter beta = ")); Serial.println(sensorData.currentBeta);
+        Serial.println(F(""));
+        Serial.print(F("Roll = ")); Serial.println(roll);
+        Serial.print(F("Pitch = ")); Serial.println(pitch);
+        Serial.print(F("Heading = ")); Serial.println(heading);
+        Serial.println(F(""));
+        Serial.println(F("---------------"));
+        Serial.println(F(""));
+        }
 
     // the filter maps roll=[-180,180] which causes f.eks. 179.99... to jump to -179.99... when bicking horizontal
     // this is a fatal flaw that should never be experienced, but it can happen with faulty sensor readings

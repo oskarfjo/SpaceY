@@ -5,11 +5,10 @@
 bool initAltitude = false;
 float initPressureHPa = 0.0;
 
-float fusedAltitude = 0;
-float lastFusedAltitude = 0;
-float verticalVelocity = 0;
-unsigned long lastAltitudeTime = 0;
+float lastAltitude = 0;
+double dtAltitude = 0.0;
 
+unsigned long lastAltitudeTime = 0;
 
 float relativeAltitude(float pressureMeasured) {
     if (!initAltitude) { // sets the starting pressure
@@ -27,43 +26,63 @@ float relativeAltitude(float pressureMeasured) {
 
 double calculateAltitude() {
     
-    unsigned long now = millis();
-    unsigned long dt = (now - lastAltitudeTime)/1000; // dt converted to seconds
-    lastAltitudeTime = now;
+    unsigned long timeCur = micros(); // time now in micros ; 10^{-6}s
+    dtAltitude = (timeCur - lastAltitudeTime) * 1e-6; // dt in seconds
+    lastAltitudeTime = timeCur; // updates timePrev
 
     // Get barometric altitude
     float baroAlt = relativeAltitude(sensorData.pressure);
 
+    /*
     // Get vertical acceleration (in the world frame)
     // We need to transform the acceleration from sensor frame to world frame using the orientation
-    float sinRoll = sin(sensorData.roll * PI / 180.0);
-    float cosRoll = cos(sensorData.roll * PI / 180.0);
-    float sinPitch = sin(sensorData.pitch * PI / 180.0);
-    float cosPitch = cos(sensorData.pitch * PI / 180.0);
+    float cr = cos(sensorData.roll), sr = sin(sensorData.roll);
+    float cp = cos(sensorData.pitch), sp = sin(sensorData.pitch);
+    float cy = cos(sensorData.heading), sy = sin(sensorData.heading);
+
+    float R[3][3];
+
+    // ZYX rotation matrix: R = Rz(yaw) * Ry(pitch) * Rx(roll)
+    R[0][0] = cy * cp;
+    R[0][1] = cy * sp * sr - sy * cr;
+    R[0][2] = cy * sp * cr + sy * sr;
+
+    R[1][0] = sy * cp;
+    R[1][1] = sy * sp * sr + cy * cr;
+    R[1][2] = sy * sp * cr - cy * sr;
+
+    R[2][0] = -sp;
+    R[2][1] = cp * sr;
+    R[2][2] = cp * cr;
+
+    float ax_local = sensorData.accelX;
+    float ay_local = sensorData.accelY;
+    float az_local = sensorData.accelZ;
+
+    //float ax_global = R[0][0]*ax_local + R[0][1]*ay_local + R[0][2]*az_local;
+    //float ay_global = R[1][0]*ax_local + R[1][1]*ay_local + R[1][2]*az_local;
+    float az_global = R[2][0]*ax_local + R[2][1]*ay_local + R[2][2]*az_local;
     
-    // Transform acceleration to world frame (simplified)
-    float verticalAccel = sensorData.accelZ * cosPitch * cosRoll - 
-                          sensorData.accelX * cosPitch * sinRoll - 
-                          sensorData.accelY * sinPitch;
-    
-    // Remove gravity
-    verticalAccel -= 9.81;
-    
+
     // Integrate acceleration to get velocity change
-    float velocityChange = verticalAccel * dt;
-    verticalVelocity += velocityChange;
+    float velocityChange = az_global * dtAltitude;
+    sensorData.verticalVelocity += velocityChange;
     
     // Integrate velocity to get position change
-    float positionChange = verticalVelocity * dt;
-    
-    // Complementary filter
-    // Higher alpha = more trust in barometer/GPS, lower alpha = more trust in IMU
-    float alpha = 1.0; // Adjust based on testing
+    float positionChange = sensorData.verticalVelocity * dtAltitude;
+    */
+    float currentVel = (baroAlt - lastAltitude)/dtAltitude;
+    sensorData.verticalVelocity = sensorData.verticalVelocity*0.9+currentVel*0.1;
 
-    fusedAltitude = alpha * baroAlt + (1 - alpha) * (lastFusedAltitude + positionChange);
-    
     // Update values for next iteration
-    lastFusedAltitude = fusedAltitude;
+    lastAltitude = baroAlt;
 
-    return fusedAltitude;
+
+    if (false) {
+      Serial.print(F("dt (s): ")); Serial.println(dtAltitude);
+      Serial.print(F("barometer altitude: ")); Serial.println(baroAlt);
+      Serial.print(F("vertical velocity: ")); Serial.println(sensorData.verticalVelocity);
+    }
+
+    return baroAlt;
 }

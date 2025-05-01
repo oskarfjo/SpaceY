@@ -31,7 +31,6 @@ extern const int gimbalLim = 7; // +-
 // Sensor PARAMS //
 float gpsData[10]; // array for gps data
 
-float initPressure = 0.0;
 float altitudePrev = 0.0;
 
 // store of values from last loop
@@ -131,25 +130,28 @@ void loop() {
 
 void calibrateSensors() {
 
-  int pressureIntAmount = 750;
+  int intAmount = 750;
 
   Serial.println(" "); Serial.println("--- CALIBRATION STARTING ---"); Serial.println(" ");
   for (int i = 0; i < 1500; i++) {
-    buzzer(100);
+    //buzzer(100);
     readImu();
     readPressure();
     readGps(gpsData);
-    if (i>=pressureIntAmount) {
-      initPressure += sensorData.pressure; // integrates pressure vals while calibrating
+    if (i>=intAmount) {
+      sensorData.initPressure += sensorData.pressure; // integrates vals while calibrating
     }
     Serial.print(F("pitch calibrating: ")); Serial.println(sensorData.pitch);
     Serial.print(F("roll calibrating: ")); Serial.println(sensorData.roll);
     Serial.print(F("pressure calibrating: ")); Serial.println(sensorData.pressure);
     Serial.println(" ");
   } Serial.println("--- CALIBRATION FINISHED ---"); Serial.println(" ");
-  initPressure = initPressure/pressureIntAmount; // sets average pressure while calibrating as refference pressure
-  Serial.print(F("init pressure: ")); Serial.println(initPressure);
-  sensorData.altitude = relativeAltitude(initPressure);
+
+  sensorData.initPressure = sensorData.initPressure/intAmount; // sets average pressure while calibrating as refference pressure
+
+  Serial.print(F("init pressure: ")); Serial.println(sensorData.initPressure);
+  relativeAltitude(sensorData.initPressure);
+  sensorData.altitude = calculateAltitude();
 }
 
 
@@ -177,15 +179,15 @@ void readSensors() {
     readGps(gpsData);
   
     sensorData.altitude = calculateAltitude();
-
   }
   if (false) {
     Serial.print(F("pitchMeasured: ")); Serial.println(sensorData.pitch);
     Serial.print(F("rollMeasured: ")); Serial.println(sensorData.roll);
     Serial.print(F("pitch gyro: ")); Serial.println(sensorData.gyroZ);
     Serial.print(F("roll gyro: ")); Serial.println(sensorData.gyroX);
-    //Serial.print(F("pressure (Bar): ")); Serial.println(sensorData.pressure);
-    //Serial.print(F("altitude (meters): ")); Serial.println(sensorData.altitude);
+    Serial.print(F("pressure (Bar): ")); Serial.println(sensorData.pressure);
+    Serial.print(F("altitude (meters): ")); Serial.println(sensorData.altitude);
+    Serial.print(F("vertical velocity: ")); Serial.println(sensorData.verticalVelocity);
   }
 }
 
@@ -261,7 +263,7 @@ void testPhases() {
     } else if (systemFlag.armSignaled && !systemFlag.armed) {
       armIgnition();
     } else if (systemFlag.armed) {
-      ctrl(0.1, 0.0, 0.0, 0.0, 0.0);
+      ctrl(0.15, 0.00, 0.07, 0.3, 0.0);
       updateServos();
     }
 
@@ -280,7 +282,7 @@ void testPhases() {
       updateServos();
 
     } else if ((millis() - timeIgnite) <= 1000) { // small pidVals during the first second
-      ctrl(0.05, 0.01, 0.0, 0.3, 0.0);
+      ctrl(0.15, 0.06, 0.07, 0.3, 0.0);
       updateServos();
     } else {
       ctrl(0.45, 0.15, 0.13, 0.3, 0.0); 
