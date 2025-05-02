@@ -9,10 +9,10 @@ void updateBeta(float gx, float gy, float gz);
 
 void initSimulatorinterface(){
     Serial.begin(115200);
-    sim_filter.begin(100);
-    sim_filter.setBeta(sensorData.currentBeta);
     while (!Serial) { delay(10); }  // Wait for serial connection
     Serial.println("Teensy is ready");
+    sim_filter.begin(100);
+    sim_filter.setBeta(sensorData.currentBeta);
 }
 
 

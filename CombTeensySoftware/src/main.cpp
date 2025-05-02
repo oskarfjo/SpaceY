@@ -65,9 +65,9 @@ void setup() {
   }
 
   if (systemFlag.programMode == systemFlag.SIM) {
-    readSimulator(simRead);
-    sensorData.altitude = relativeAltitude(101324.31);
     initSimulatorinterface();
+    readSimulator(simRead);
+    sensorData.altitude = relativeAltitude(simRead[5]);
   } else {
     Serial.begin(115200);
     initSensors();
