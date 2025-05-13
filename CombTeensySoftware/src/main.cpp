@@ -195,15 +195,25 @@ void flightPhases() {
 
   if (systemFlag.flightPhase == systemFlag.LAUNCHED || systemFlag.flightPhase == systemFlag.FLIGHT) {
     // rocket is ascending
-    ctrl(0.5, 0.35, 0.0, 0.3, 0.0);
+    if ((millis() - timeIgnite) <= 1000) { // small pidVals during the first second
+      ctrl(0.15, 0.06, 0.07, 0.3, 0.0);
+    } else {
+      ctrl(0.45, 0.15, 0.13, 0.3, 0.0); 
+    }
     updateServos();
+
   }
 
   if (systemFlag.flightPhase == systemFlag.PREEFLIGHT) {
     // rocket has not yet launched
-    if (systemFlag.armed) { // ensures correct angle at lauch
-      ctrl(0.5, 0.0, 0.0, 0.0, 0.0);
-      updateServos();  
+    reciever(100); // listening on LoRa at 10Hz
+
+    if (!systemFlag.armed) { // sets the gimbal to neutral position if not armed
+      ctrlData.gimbalPitchAngle = 0.0;
+      ctrlData.gimbalRollAngle = 0.0;
+
+    } else { // ensures correct angle at launch without integral buildup if armed
+      ctrl(0.15, 0.0, 0.07, 0.3, 0.0);
     }
     
     if (systemFlag.launchSignaled && systemFlag.armed) {
@@ -214,6 +224,8 @@ void flightPhases() {
     } else if (systemFlag.armSignaled && !systemFlag.armed) {
       armIgnition();
     }
+
+    updateServos();  
 
   } else if (systemFlag.flightPhase == systemFlag.LAUNCHED && sensorData.altitude >= 10.0) {
     // rocket is in stable flight
@@ -234,7 +246,7 @@ void flightPhases() {
 
   } else if (systemFlag.flightPhase == systemFlag.DESCENT) {
     // rocket is decending with parachute
-    double altitudeDerivative = (sensorData.altitude - altitudePrev)/ctrlData.dt; // should use imu data
+    double altitudeDerivative = (sensorData.altitude - altitudePrev)/ctrlData.dt;
     if (abs(altitudeDerivative) < 0.001) {
       systemFlag.flightPhase = systemFlag.GROUND;
     }
