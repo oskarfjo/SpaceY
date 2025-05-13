@@ -252,10 +252,13 @@ void flightPhases() {
     }
     deployParachute(true);
 
-  } else if (systemFlag.flightPhase == systemFlag.GROUND && logging) {
+  } else if (systemFlag.flightPhase == systemFlag.GROUND) {
     // rocket has landed; start shutdown
+    if (logging) {
     logData();
     logging = false;
+    }
+    resetIgnition();
   }
 
   if (false) {
